@@ -1,6 +1,4 @@
-% Writes tags to a structure from the fieldMap information. The tags in the
-% dataset structure are written to the .etc field and in each individual
-% event in the .event field.
+% Finds the unique HED tags in a cell array of tags.  
 %
 % Usage:
 %
@@ -11,14 +9,13 @@
 %   Required:
 %
 %   tags
-%                    The structure that will be tagged. The
-%                    dataset will need to have a .event field.
+%                    A cell array containing HED tags. 
 %
 % Output:
 %
 %   uniquetags
-%                    The structure that will be tagged. The
-%                    dataset will need to have a .event field.
+%                    A cell string containing the unique HED tags in the 
+%                    tags input argument. 
 %
 % Copyright (C) 2012-2016 Thomas Rognon tcrognon@gmail.com,
 % Jeremy Cockfield jeremy.cockfield@gmail.com, and

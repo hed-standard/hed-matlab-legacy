@@ -32,7 +32,7 @@
 %                   a header. The first row will not be validated otherwise
 %                   it will and this can generate issues.
 %
-%   'hedXML'
+%   'hedXml'
 %                   The full path to a HED XML file containing all of the
 %                   tags. This by default will be the HED.xml file
 %                   found in the hed directory.
@@ -100,32 +100,13 @@ issues = validate(p);
 
     function issues = validate(p)
         % Validates the HED tags in the tab-separated file
-        p.hedMaps = getHEDMaps(p);
-        [p.issues, p.replaceTags] = parsetsv(p.hedMaps, ...
+        [p.issues, p.replaceTags] = parsetsv(p.hedXml, ...
             p.tsvFile, p.tagColumns, p.hasHeader, p.generateWarnings);
         issues = p.issues;
         if p.writeOutput
             writeOutputFiles(p);
         end
     end % validate
-
-    function hedMaps = getHEDMaps(p)
-        % Gets a structure full of Maps containings all of the HED tags and
-        % their attributes
-        hedMaps = loadHEDMap();
-        mapVersion = hedMaps.version;
-        xmlVersion = getxmlversion(p.hedXML);
-        if ~strcmp(mapVersion, xmlVersion);
-            hedMaps = mapattributes(p.hedXML);
-        end
-    end % getHEDMaps
-
-    function hedMaps = loadHEDMap()
-        % Loads a structure full of Maps containings all of the HED tags
-        % and their attributes
-        Maps = load('hedMaps.mat');
-        hedMaps = Maps.hedMaps;
-    end % loadHEDMap
 
     function p = parseArguments(tsvFile, tagColumns, varargin)
         % Parses the arguements passed in and returns the results
@@ -135,7 +116,7 @@ issues = validate(p);
             isa(x,'double') && length(x) >= 1));
         p.addParamValue('generateWarnings', false, ...
             @(x) validateattributes(x, {'logical'}, {}));
-        p.addParamValue('hedXML', 'HED.xml', ...
+        p.addParamValue('hedXml', 'HED.xml', ...
             @(x) (~isempty(x) && ischar(x)));
         p.addParamValue('hasHeader', true, @islogical);
         p.addParamValue('replaceFile', '', @(x) (~isempty(x) && ...
