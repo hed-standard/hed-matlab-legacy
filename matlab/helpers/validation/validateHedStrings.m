@@ -1,6 +1,6 @@
 function issues = validateHedStrings(hedxml, hedStrings, generateWarnings)
 % set up server destination
-host = 'http://localhost:5000';
+host = 'http://visualtest.cs.utsa.edu/hed';
 url = [host '/eegsubmit'];
 
 % retrieve CSRF token and cookies

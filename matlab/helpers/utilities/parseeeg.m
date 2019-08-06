@@ -82,9 +82,13 @@ issues = validateEventsTags(p);
                 hedStrings{a} = concattags(p.events(a));             
             end
             issues = validateHedStrings(p.hedXml,hedStrings,p.generateWarnings);
-        catch
-            throw(MException('parseeeg:cannotRead', ...
+        catch ME
+            if ME.identifier == "validateHedString:serverError"
+                throw(ME);
+            else
+                throw(MException('parseeeg:cannotRead', ...
                 'Unable to read event %d', a));
+            end
         end
     end % readStructTags
 
