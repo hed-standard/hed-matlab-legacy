@@ -43,9 +43,8 @@ for k = 1:length(tags) - 1
         tags{k} = undoprefix(tags{k});
         continue;
     end
-    if ~isempty(regexp(tags{k+1}, ['^' tags{k}], ...
-            'match'))
-        tags{k} = [];
+    if ~all(cellfun('isempty',(regexp(tags{k+1}, ['^' tags{k}], 'match'))))
+	tags{k} = [];
     end
 end
 tags = tags(~cellfun('isempty',tags));
