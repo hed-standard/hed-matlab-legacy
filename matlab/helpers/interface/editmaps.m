@@ -74,8 +74,12 @@ canceled = p.canceled;
         p.hedExtended = false;
         p.standAlone = false;
         p.useJSON = true;
-        p.fieldsToTag = sort(setdiff(p.fMap.getFields(), ...
-            p.EventFieldsToIgnore));
+        if isempty(p.CombinedFieldsToTag) % if user select a combination of fields to tag
+            p.fieldsToTag = sort(setdiff(p.fMap.getFields(), ...
+                p.EventFieldsToIgnore));
+        else
+            p.fieldsToTag = p.CombinedFieldsToTag;
+        end
         p.canceled = false;
         p.k = 1;
         p.firstField = true;
@@ -85,13 +89,29 @@ canceled = p.canceled;
         % Edit the tags in the current field using CTagger
         p.tMap = p.fMap.getMap(p.field);
         if isempty(p.tMap)
-            p.k = p.k + 1;
-            return;
+            if contains(p.field,'+') % if combined fields
+                % get field values combinations
+                fieldList = strsplit(p.field,'+');
+                tValues = combineCode(p.fMap.getMap(fieldList{1}).getCodes(),p.fMap.getMap(fieldList{2}).getCodes()); 
+                % change field name for display purpose
+%                 fieldName = strrep(p.field,',','+');
+                p.EventFieldToTag = p.field; 
+                % create new field and add to fMap
+                valueForm = tagList.empty(0,length(tValues));
+                for j = 1:length(tValues)
+                    valueForm(j) = tagList(num2str(tValues{j}));
+                end
+                p.fMap.addValues(p.field, valueForm);
+                p.tMap = p.fMap.getMap(p.field);
+            else
+                p.k = p.k + 1;
+                return;
+            end
         end
         p = executeCTagger(p);
         if p.loaded
             baseTags = fieldMap.loadFieldMap(char(p.loader.getFMapPath));
-            p.fMap.merge(baseTags, 'Update', {}, p.fieldsToTag);
+            p.fMap.merge(baseTags, 'Update', {}, p.EventFieldToTag);
             if p.loader.isStartOver()
                 p.k = 1;
                 p.firstField = true;
@@ -146,7 +166,7 @@ canceled = p.canceled;
         p.tValues = strtrim(char(p.tMap.getJsonValues()));
         p.xml = p.fMap.getXml();
         p.flags = setCTaggerFlags(p);
-        p.eTitle = ['Tagging ' p.field ' values'];
+        p.eTitle = 'Specifying HED tags for events - CTAGGER'; %['Tagging ' p.field ' values'];
     end % getCTaggerParameters
 
     function flags = setCTaggerFlags(p)
@@ -157,9 +177,6 @@ canceled = p.canceled;
         end
         if p.HedExtensionsAllowed
             flags = bitor(flags,4);
-        end
-        if p.HedExtensionsAnywhere
-            flags = bitor(flags,8);
         end
         if p.standAlone
             flags = bitor(flags,16);
@@ -189,15 +206,26 @@ canceled = p.canceled;
             p.fMap.setXml(p.xml);
         end
     end % updatefMap
-
+    
+    function combinations = combineCode(field1, field2)
+        % Generate all possible combinations between field values 
+        % of the two fields selected by the user
+        combinations = strings(numel(field1),numel(field2));
+        for i=1:numel(field1)
+            for j=1:numel(field2)
+                combinations(i,j) = [field1{i} '-' field2{j}];
+            end
+        end
+        combinations = reshape(combinations,[1 numel(combinations)]);
+    end
     function p = parseArguments(fMap, varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
         parser.addRequired('fMap', @(x) (~isempty(x) && isa(x, ...
             'fieldMap')));
         parser.addParamValue('EventFieldsToIgnore', {}, @iscellstr);
+        parser.addParamValue('CombinedFieldsToTag', {}, @iscellstr);
         parser.addParamValue('HedExtensionsAllowed', true, @islogical);
-        parser.addParamValue('HedExtensionsAnywhere', false, @islogical);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.parse(fMap, varargin{:});
         p = parser.Results;
