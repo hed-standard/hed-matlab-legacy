@@ -1,3 +1,4 @@
+
 % eegplugin_hedtools makes a HEDTools plugin for EEGLAB
 %
 % Usage:
@@ -48,75 +49,53 @@ end;
 % Find the path of the current directory
 addhedpaths(true);
 
-% Find 'Edit' in the figure 
-parentMenu = findobj(fig, 'Label', 'Edit');
-
-% Processing for 'Tag current EEG'
-finalcmd = '[EEG, ~, LASTCOM] = pop_tageeg(EEG);';
-ifeegcmd = 'if ~isempty(LASTCOM) && ~isempty(EEG)';
-savecmd = '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);';
-redrawcmd = ' eeglab redraw;';
-finalcmd =  [trystrs.no_check finalcmd ifeegcmd savecmd ...
-    redrawcmd 'end;' catchstrs.add_to_hist];
-
-% Add 'Tag current EEG' to 'Edit'
-uimenu(parentMenu, 'Label', 'Tag current dataset', 'Callback', ...
-    finalcmd, ...
-    'Separator', 'on');
-
-% Processing for 'Validate current EEG'
-finalcmd = '[~, LASTCOM] = pop_validateeeg(EEG);';
-
-% Add 'Validate current EEG' to 'Edit'
-uimenu(parentMenu, 'Label', 'Validate current dataset', 'Callback', ...
-    finalcmd);
-
 % Find 'Memory and other options' in the figure 
 parentMenu = findobj(fig, 'Label', 'File', 'Type', 'uimenu');
 positionMenu = findobj(fig, 'Label', 'Memory and other options', ...
     'Type', 'uimenu');
 position = get(positionMenu, 'Position');
 
-% Add 'Validate files' to 'File'
-dirMenu = uimenu(parentMenu, 'Label', 'Validate files', ...
-    'Position', position, 'userdata', 'startup:on;study:on');
 
-% Processing for 'Tag directory'
+%% Add validation submenu to 'File'
+dirMenu = uimenu(parentMenu, 'Label', 'Validate event HED tags', ...
+    'Position', position, 'userdata', 'startup:on;study:on');
+% Validate current EEG dataset option
+finalcmd = '[~, LASTCOM] = pop_validateeeg(EEG);';
+uimenu(dirMenu, 'Label', 'For current dataset', 'Callback', ...
+    finalcmd, 'userdata', 'startup:off');
+% Validate directory
 finalcmd = '[~, LASTCOM] = pop_validatedir();';
 finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Validate directory' to 'Tag files' 
-uimenu(dirMenu, 'Label', 'Validate directory', 'Callback', finalcmd, ...
+uimenu(dirMenu, 'Label', 'For a directory', 'Callback', finalcmd, ...
     'Separator', 'on', 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag EEG study'
+% Validate EEG STUDY
 finalcmd = '[~, LASTCOM] = pop_validatestudy();';
 finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Validate EEG study' to 'Tag files'  
-uimenu(dirMenu, 'Label', 'Validate study', 'Callback', finalcmd, ...
+uimenu(dirMenu, 'Label', 'For a study', 'Callback', finalcmd, ...
     'Separator', 'on', 'userdata', 'startup:on;study:on');
 
-% Add 'Tag files' to 'File'
-dirMenu = uimenu(parentMenu, 'Label', 'Tag files', ...
+%% Add Tagging submenu to 'File'
+dirMenu = uimenu(parentMenu, 'Label', 'Add/Edit event HED tags', ...
     'Separator', 'on', 'Position', position, 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag directory'
+% Tag current EEG dataset
+finalcmd = '[EEG, ~, LASTCOM] = pop_tageeg(EEG);';
+ifeegcmd = 'if ~isempty(LASTCOM) && ~isempty(EEG.event)';
+savecmd = '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);';
+redrawcmd = ' eeglab redraw;';
+finalcmd =  [trystrs.no_check finalcmd ifeegcmd savecmd ...
+    redrawcmd 'end;' catchstrs.add_to_hist];
+uimenu(dirMenu, 'Label', 'For current dataset', 'Callback', ...
+    finalcmd, 'userdata', 'startup:off');
+% Tag directory
 finalcmd = '[~, ~, LASTCOM] = pop_tagdir();';
 finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Tag directory' to 'Tag files' 
-uimenu(dirMenu, 'Label', 'Tag directory', 'Callback', finalcmd, ...
+uimenu(dirMenu, 'Label', 'For a directory', 'Callback', finalcmd, ...
     'Separator', 'on', 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag EEG study'
+% Tag EEG STUDY
 finalcmd = '[~, ~, LASTCOM] = pop_tagstudy();';
 finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Tag EEG study' to 'Tag files'  
-uimenu(dirMenu, 'Label', 'Tag study', 'Callback', finalcmd, ...
+uimenu(dirMenu, 'Label', 'For a study', 'Callback', finalcmd, ...
     'Separator', 'on', 'userdata', 'startup:on;study:on');
-
 
 % Find 'Remove baseline' in the figure 
 parentMenu = findobj(fig, 'Label', 'Tools');
