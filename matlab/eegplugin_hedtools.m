@@ -55,7 +55,7 @@ positionMenu = findobj(fig, 'Label', 'Memory and other options', ...
     'Type', 'uimenu');
 position = get(positionMenu, 'Position');
 
-
+%% Adding HEDTools submenu items to 'File'. Order of insertion in script is opposite to order of appearance in 'File' menu
 %% Add validation submenu to 'File'
 dirMenu = uimenu(parentMenu, 'Label', 'Validate event HED tags', ...
     'Position', position, 'userdata', 'startup:on;study:on');

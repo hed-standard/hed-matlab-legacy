@@ -196,14 +196,33 @@ if p.UseGui
     selectEventFields = taggerMenuArgs{2};
     useCTagger = taggerMenuArgs{4};
     
+%     % Select fields to tag
+%     ignoredEventFields = {};
+%     if useCTagger && selectEventFields
+%         selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
+%             varargin{:});
+%         [canceled, ignoredEventFields] = selectmaps(fMap, ...
+%             selectmapsInputArgs{:});
+%     else
+%         fMap.setPrimaryMap(p.PrimaryEventField);
+%     end
+%     selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
+%     
+%     % Use CTagger
+%     if useCTagger && ~canceled
+%         editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
+%             menuOutputArgs{:}) selectmapsOutputArgs];
+%         [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+%     end
 
-    % Select field and add tags
+    % Select field (if selected) and tag using CTAGGER
     if useCTagger && ~canceled
         ignoredEventFields = {};
         % if select fields to tag
         if selectEventFields
             args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+            [f, fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+            uiwait(f);
         else
             fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
             selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
