@@ -24,13 +24,6 @@
 %                    false, the HED can not be extended. The 
 %                    'ExtensionAnywhere argument determines where the HED
 %                    can be extended if extension are allowed.
-%                  
-%   'HedExtensionsAnywhere'
-%                    If true, the HED can be extended underneath all tags.
-%                    If false (default), the HED can only be extended where
-%                    allowed. These are tags with the 'extensionAllowed'
-%                    attribute or leaf tags (tags that do not have
-%                    children).
 %
 %   'PreserveTagPrefixes'
 %                    If false (default), tags of the same event type that
