@@ -52,7 +52,7 @@
 function eData = writetags(eData, fMap, varargin)
 p = parseArguments(eData, fMap, varargin{:});
 
-tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % EventFieldsToIgnore seems to always be empty if called from ctagger (unless specified by command line)
+tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % fields to write tags to
 
 if isfield(eData, 'event') && isstruct(eData.event)
     if isfield(p, 'taggedCombinedFields') && isempty(p.taggedCombinedFields)

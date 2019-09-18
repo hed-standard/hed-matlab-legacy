@@ -160,17 +160,17 @@ p = parseArguments(varargin{:});
 if p.UseGui
     % Get the menu input parameters
     menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
-        'HedExtensionsAnywhere', 'HedXml', 'InDir', ...
+        'HedXml', 'InDir', ...
         'PreserveTagPrefixes', 'SelectEventFields', 'StudyFile', ...
         'UseCTagger'}, varargin{:});
     % Get the input parameters
     [canceled, baseMap, hedExtensionsAllowed, ...
-        hedExtensionsAnywhere, hedXml, preserveTagPrefixes, ...
+        hedXml, preserveTagPrefixes, ...
         selectEventFields, studyFile, useCTagger] = ...
         pop_tagstudy_input(menuInputArgs{:});
     menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
-        hedExtensionsAllowed, 'HedExtensionsAnywhere', ...
-        hedExtensionsAnywhere, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
+        hedExtensionsAllowed, ...
+        'HedXml', hedXml, 'PreserveTagPrefixes', ...
         preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
         'StudyFile', studyFile, 'UseCTagger', useCTagger};
     if canceled
@@ -191,24 +191,40 @@ if p.UseGui
     selectEventFields = taggerMenuArgs{2};
     useCTagger = taggerMenuArgs{4};
     
-    % Select fields to tag
-    ignoredEventFields = {};
-    if useCTagger && selectEventFields
-        selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
-            varargin{:});
-        [canceled, ignoredEventFields] = selectmaps(fMap, ...
-            selectmapsInputArgs{:});
-    else
-        fMap.setPrimaryMap(p.PrimaryEventField);
-    end
-    selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
-    
-    % Use CTagger
+%     % Select fields to tag
+%     ignoredEventFields = {};
+%     if useCTagger && selectEventFields
+%         selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
+%             varargin{:});
+%         [canceled, ignoredEventFields] = selectmaps(fMap, ...
+%             selectmapsInputArgs{:});
+%     else
+%         fMap.setPrimaryMap(p.PrimaryEventField);
+%     end
+%     selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
+%     
+%     % Use CTagger
+%     if useCTagger && ~canceled
+%         editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', ...
+%             'PreserveTagPrefixes'}, ...
+%             menuOutputArgs{:}) selectmapsOutputArgs];
+%         [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+%     end
+
+    % if use Ctagger
     if useCTagger && ~canceled
-        editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', ...
-            'HedExtensionsAnywhere', 'PreserveTagPrefixes'}, ...
-            menuOutputArgs{:}) selectmapsOutputArgs];
-        [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        ignoredEventFields = {};
+        % if select fields to tag
+        if selectEventFields
+            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
+            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+        else
+            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
+            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
+                menuOutputArgs{:}) selectmapsOutputArgs];
+            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        end
     end
     
     if canceled
@@ -281,7 +297,6 @@ com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
         parser.addParamValue('FMapSaveFile', '', @(x)(isempty(x) || ...
             (ischar(x))));
         parser.addParamValue('HedExtensionsAllowed', true, @islogical);
-        parser.addParamValue('HedExtensionsAnywhere', false, @islogical);
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
         parser.addParamValue('OverwriteUserHed', '', @islogical);
         parser.addParamValue('OverwriteDatasets', false, @islogical);
