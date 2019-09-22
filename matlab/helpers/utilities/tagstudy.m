@@ -73,10 +73,15 @@
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-function [fMap, fPaths] = tagstudy(studyFile, varargin)
-p = parseArguments(studyFile, varargin{:});
-[~, fPaths] = loadstudy(p.StudyFile);
+ 
+function [fMap, fPaths] = tagstudy(study, varargin)
+if isstruct(study)
+    p = parseArguments(varargin{:});
+    fPaths = getstudyfiles(study);
+else
+    p = parseArguments('StudyFile', study, varargin{:});
+    [~, fPaths] = loadstudy(p.StudyFile);
+end
 if isempty(fPaths)
     fMap = '';
     warning('tagstudy:nofiles', 'No files in study\n');
@@ -86,7 +91,7 @@ fMap = findStudyTags(p, fPaths);
 if ~isempty(p.BaseMap)
     fMap = mergeBaseTags(p, fMap);
 end
-
+ 
     function fMap = mergeBaseTags(p, fMap)
         % Merge baseMap and fMap tags
         if isa(p.BaseMap, 'fieldMap')
@@ -97,7 +102,7 @@ end
         fMap.merge(baseTags, 'Update', union(p.BaseMapFieldsToIgnore, ...
             p.EventFieldsToIgnore), {});
     end % mergeBaseTags
-
+ 
     function [fMap, studyFields] = findStudyTags(p, fPaths)
         % Find the existing tags from the study datasets
         fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
@@ -111,12 +116,11 @@ end
             fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
         end
     end % findStudyTags
-
-    function p = parseArguments(studyFile, varargin)
+ 
+    function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
-        parser.addRequired('StudyFile', ...
-            @(x) (~isempty(x) && exist(studyFile, 'file')));
+        parser.addParamValue('StudyFile', '', @(x) (~isempty(x) && exist(x, 'file')));
         parser.addParamValue('BaseMap', '', @(x) isa(x, 'fieldMap') || ...
             ischar(x));
         parser.addParamValue('BaseMapFieldsToIgnore', {}, @iscellstr);
@@ -125,8 +129,8 @@ end
             {'latency', 'epoch', 'urevent', 'hedtags', 'usertags'}, ...
             @iscellstr);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
-        parser.parse(studyFile, varargin{:});
+        parser.parse(varargin{:});
         p = parser.Results;
     end % parseArguments
-
+ 
 end % tagstudy

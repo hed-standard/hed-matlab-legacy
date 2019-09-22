@@ -42,7 +42,7 @@ for ik = 1:length(paths)
     if ~exist(fPath, 'file')  % Relative to stored study path
         fPath = fullfile(study.filepath, paths{ik}, datasets{ik});
     end
-    if ~exist(fPath, 'file') % Relative to actual study path
+    if ~exist(fPath, 'file') && exist('sPath','var') % Relative to actual study path
         fPath = fullfile(sPath, paths{ik}, datasets{ik});
     end
     if ~exist(fPath, 'file') % Give up

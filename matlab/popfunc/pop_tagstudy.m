@@ -148,14 +148,18 @@
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
-function [fMap, fPaths, com] = pop_tagstudy(varargin)
+ 
+function [fMap, fPaths, com] = pop_tagstudy(STUDY, varargin)
 fMap = '';
 fPaths = '';
 com = '';
-
-p = parseArguments(varargin{:});
-
+ 
+if exist('STUDY','var')
+    p = parseArguments(STUDY,varargin{:});
+else
+    p = parseArguments('',varargin{:});
+end
+ 
 % Call function with menu
 if p.UseGui
     % Get the menu input parameters
@@ -167,7 +171,7 @@ if p.UseGui
     [canceled, baseMap, hedExtensionsAllowed, ...
         hedXml, preserveTagPrefixes, ...
         selectEventFields, studyFile, useCTagger] = ...
-        pop_tagstudy_input(menuInputArgs{:});
+        pop_tagstudy_input(menuInputArgs{:}, 'hasSTUDY', p.hasSTUDY);
     menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
         hedExtensionsAllowed, ...
         'HedXml', hedXml, 'PreserveTagPrefixes', ...
@@ -184,7 +188,11 @@ if p.UseGui
     canceled = false;
     
     % Merge base map
-    [fMap, fPaths] = tagstudy(studyFile, tagstudyInputArgs{:});
+    if p.hasSTUDY
+        [fMap, fPaths] = tagstudy(STUDY, tagstudyInputArgs{:});
+    else
+        [fMap, fPaths] = tagstudy(studyFile, tagstudyInputArgs{:});
+    end
     
     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
         menuOutputArgs{:});
@@ -210,7 +218,7 @@ if p.UseGui
 %             menuOutputArgs{:}) selectmapsOutputArgs];
 %         [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
 %     end
-
+ 
     % if use Ctagger
     if useCTagger && ~canceled
         ignoredEventFields = {};
@@ -259,6 +267,9 @@ if p.UseGui
     % Save datasets
     saveheddatasetsInputArgs = getkeyvalue({'CopyDatasets', ...
         'CopyDestination', 'OverwriteDatasets'}, varargin{:});
+    if p.hasSTUDY
+        studyFile = fullfile(STUDY.filepath, STUDY.filename);
+    end
     [fMap, copyDatasets, copyDestination, overwriteDatasets] = ...
         pop_saveheddatasets(fMap, studyFile, saveheddatasetsInputArgs{:});
     saveheddatasetsOutputArgs = {'CopyDatasets', copyDatasets, ...
@@ -268,7 +279,7 @@ if p.UseGui
     % Build command string
     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
 end
-
+ 
 % Call function without menu
 if nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
@@ -276,12 +287,19 @@ if nargin > 1 && ~p.UseGui
         varargin{:});
     [fMap, fPaths] = tagstudy(p.StudyFile, inputArgs{:});
 end
-
+ 
 com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
-
-
-    function p = parseArguments(varargin)
+ 
+% STUDY take precedence over studyfile
+    function p = parseArguments(STUDY,varargin)
+        if ~isempty(STUDY)
+            if isstruct(STUDY) 
+                varargin = ['hasSTUDY', true, varargin];
+            else
+                varargin = [STUDY varargin];
+            end    
+        end
         % Parses the input arguments and returns the results
         parser = inputParser;
         parser.addOptional('UseGui', true, @islogical);
@@ -312,8 +330,9 @@ com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
         parser.addParamValue('WriteFMapToFile', false, @islogical);
         parser.addParamValue('WriteSeparateUserHedFile', false, ...
             @islogical);
+        parser.addParamValue('hasSTUDY', false, @islogical);
         parser.parse(varargin{:});
         p = parser.Results;
     end % parseArguments
-
+ 
 end % pop_tagstudy

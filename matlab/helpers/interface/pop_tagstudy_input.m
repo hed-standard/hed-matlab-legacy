@@ -65,7 +65,7 @@
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-
+ 
 function [canceled, baseMap, hedExtensionsAllowed, ...
     hedXml, preserveTagPrefixes, ...
     selectEventFields, studyFile, useCTagger] = ...
@@ -79,6 +79,11 @@ preserveTagPrefixes = p.PreserveTagPrefixes;
 selectEventFields = p.SelectEventFields;
 studyFile = p.StudyFile;
 useCTagger = p.UseCTagger;
+if p.hasSTUDY
+    isStudyFileVisible = 'off';
+else
+    isStudyFileVisible = 'on';
+end
 title = 'Inputs for tagging EEG study';
 %% Defining GUI elements
 geometry = {[0.3 1 0.2] ...
@@ -91,9 +96,9 @@ uilist = {...
     {'Style', 'text', 'string', 'HED Schema'} ...
     {'Style', 'edit', 'string', hedXml, 'tag', 'HEDpath', 'TooltipString', 'The HED XML file', 'Callback', {@hedEditBoxCallback}} ...
     {'Style', 'pushbutton', 'string', '...', 'callback', @browseHEDFileCallBack} ...
-    {'Style', 'text', 'string', 'Study file'} ...
-    {'Style', 'edit', 'string', studyFile, 'tag', 'StudyPath', 'TooltipString', 'Path to .study file', 'Callback', {@studyEditboxCallback}} ...
-    {'Style', 'pushbutton', 'string', '...', 'callback', @browseStudyCallBack} ...
+    {'Style', 'text', 'string', 'Study file', 'Visible', isStudyFileVisible} ...
+    {'Style', 'edit', 'string', studyFile, 'tag', 'StudyPath', 'TooltipString', 'Path to .study file', 'Callback', {@studyEditboxCallback}, 'Visible', isStudyFileVisible} ...
+    {'Style', 'pushbutton', 'string', '...', 'callback', @browseStudyCallBack, 'Visible', isStudyFileVisible} ...
     {'Style', 'text', 'string', 'Import tagfile'} ...
     {'Style', 'edit', 'string', baseMap, 'tag', 'fMapPath', 'TooltipString', 'FieldMap file (.mat) containing events and their associated HED tags', 'Callback', {@baseMapEditboxCallback}} ...
     {'Style', 'pushbutton', 'string', '...', 'callback', @browseBaseMapCallBack} ...
@@ -110,14 +115,14 @@ uilist = {...
         'string', 'Allow new HED tags (if compatible with the HED schema)',...
         'TooltipString', 'If checked, allow extension of HED schema where compatible with the schema definition', 'tag', 'ExtensionAllowed' } ...        
     };
-
+ 
 %% Waiting for user input
 [tmp1, tmp2, strhalt, structout] = inputgui( geometry, uilist, ...
            'pophelp(''pop_tagstudy'');', 'Tag STUDY -- pop_tagstudy()');
        
 %% Set values accordingly 
-if ~isempty(structout) % if not canceled
-    if isempty(structout.StudyPath)
+if ~isempty(structout)  % if not canceled
+    if isempty(structout.StudyPath) && ~p.hasSTUDY
         warndlg('No STUDY path was provided. Tagging was canceled', 'Empty path','modal');
         canceled = true;
         return;
@@ -134,8 +139,8 @@ if ~isempty(structout) % if not canceled
     hedExtensionsAllowed = logical(structout.ExtensionAllowed);
     canceled = false;
 end
-
-
+ 
+ 
  %% Callback functions  
     function hedEditBoxCallback(src, ~) 
         % Callback for user directly editing the HED XML editbox
@@ -168,7 +173,7 @@ end
             set(findobj('Tag', 'StudyPath'), 'String', STUDYFile);
         end
     end % browseStudyCallBack
-
+ 
     function studyEditboxCallback(src, ~)
         % Callback for user directly editing the HED XML editbox
         studyPath = get(src, 'String');
@@ -180,7 +185,7 @@ end
         end
         
     end % studyEditboxCallback
-
+ 
     function baseMapEditboxCallback(src, ~)
         % Callback for user directly editing the 'Base tags' editbox
         tagsFile = get(src, 'String');
@@ -190,8 +195,8 @@ end
             set(src, 'String', baseMap);
         end
     end % baseTagsEditboxCallback
-
-
+ 
+ 
     function browseBaseMapCallBack(~, ~)
         [file, path] = uigetfile({'*.mat';'*.MAT'}, 'Browse for FieldMap file (*.mat)');
         tagsFile = fullfile(path, file);
@@ -199,7 +204,7 @@ end
             set(findobj('Tag', 'fMapPath'), 'String', tagsFile);
         end
     end % browsefMapCallBack
-
+ 
     function valid = isValidBaseTags(tagsFile)
         % Checks to see if the 'Base tags' passed in is valid
         valid = true;
@@ -207,7 +212,7 @@ end
             valid = false;
         end
     end % isValidBaseTags
-
+ 
     function useCTaggerCallback(src, ~)
         if get(src, 'value') == 0
             set(findobj('Tag', 'SelectField'), 'Enable', 'off');
@@ -215,7 +220,7 @@ end
             set(findobj('Tag', 'SelectFieldsCB'), 'Enable', 'on');
         end
     end % useCTaggerCallback
-
+ 
     function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
@@ -227,9 +232,10 @@ end
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.addParamValue('SelectEventFields', true, @islogical);
         parser.addParamValue('UseCTagger', true, @islogical);
+        parser.addParamValue('hasSTUDY', false, @islogical);
         parser.parse(varargin{:});
         p = parser.Results;
     end % parseArguments
-
-
+ 
+ 
 end % tagstudy_input
