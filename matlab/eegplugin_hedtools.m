@@ -44,16 +44,18 @@ vers = 'HEDTools2.5.0';
 % Check the number of input arguments
 if nargin < 3
     error('eegplugin_hedtools requires 3 arguments');
-end;
+end
 
 % Find the path of the current directory
 addhedpaths(true);
 
 % Find 'Memory and other options' in the figure 
-parentMenu = findobj(fig, 'Label', 'File', 'Type', 'uimenu');
-positionMenu = findobj(fig, 'Label', 'Memory and other options', ...
-    'Type', 'uimenu');
-position = get(positionMenu, 'Position');
+parentMenu = findobj(fig, 'Label', 'Edit', 'Type', 'uimenu');
+positionMenu = findobj(fig, 'Label', 'Event values', 'Type', 'uimenu');
+% if isempty(positionMenu)
+%     positionMenu = findobj(fig, 'Label', 'Memory and other options', 'Type', 'uimenu');
+% end
+position = get(positionMenu, 'Position') + 1;
 
 %% Adding HEDTools submenu items to 'File'. Order of insertion in script is opposite to order of appearance in 'File' menu
 %% Add validation submenu to 'File'
@@ -75,32 +77,26 @@ uimenu(dirMenu, 'Label', 'For a study', 'Callback', finalcmd, ...
     'Separator', 'on', 'userdata', 'startup:on;study:on');
 
 %% Add Tagging submenu to 'File'
-dirMenu = uimenu(parentMenu, 'Label', 'Add/Edit event HED tags', ...
-    'Separator', 'on', 'Position', position, 'userdata', 'startup:on;study:on');
-% Tag current EEG dataset
-finalcmd = '[EEG, ~, LASTCOM] = pop_tageeg(EEG);';
-ifeegcmd = 'if ~isempty(LASTCOM) && ~isempty(EEG.event)';
-savecmd = '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);';
-redrawcmd = ' eeglab redraw;';
-finalcmd =  [trystrs.no_check finalcmd ifeegcmd savecmd ...
-    redrawcmd 'end;' catchstrs.add_to_hist];
-uimenu(dirMenu, 'Label', 'For current dataset', 'Callback', ...
-    finalcmd, 'userdata', 'startup:off');
-% Tag directory
-finalcmd = '[~, ~, LASTCOM] = pop_tagdir();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-uimenu(dirMenu, 'Label', 'For a directory', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
-% Tag EEG STUDY
-finalcmd = '[~, ~, LASTCOM] = pop_tagstudy();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-uimenu(dirMenu, 'Label', 'For a study', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
+callbackCmd = [trystrs.no_check ...
+                'if exist(''STUDY'',''var'') && exist(''CURRENTSTUDY'',''var'') && length(EEG) > 1 && CURRENTSTUDY == 1, ' ...
+                    '[~, ~, LASTCOM] = pop_tagstudy(STUDY);' ...
+                'else ' ...
+                    '[EEG, ~, LASTCOM] = pop_tageeg(EEG);' ...
+                    'if ~isempty(LASTCOM) && ~isempty(EEG.event),' ...
+                        '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);' ...
+                        'eeglab redraw;' ...
+                    'end;' ...
+                'end;' ...
+                catchstrs.add_to_hist];
+uimenu(parentMenu, 'Label', 'Add/Edit event HED tags', ...
+    'Separator', 'off', 'Position', position, 'userdata', 'startup:off', 'Callback', callbackCmd);
 
 % Find 'Remove baseline' in the figure 
 parentMenu = findobj(fig, 'Label', 'Tools');
-positionMenu = findobj(fig, 'Label', 'Remove baseline', ...
-    'Type', 'uimenu');
+positionMenu = findobj(fig, 'Label', 'Remove epoch baseline', 'Type', 'uimenu');
+if isempty(positionMenu)
+    positionMenu = findobj(fig, 'Label', 'Remove baseline', 'Type', 'uimenu');
+end
 position = get(positionMenu, 'Position');
 
 % Processing for 'Extract epochs by tags'
