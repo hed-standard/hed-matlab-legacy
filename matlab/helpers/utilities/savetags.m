@@ -72,14 +72,17 @@ end
 fprintf(['\n---Now rewriting the tags to the individual' ...
     ' data files---\n']);
 for k = 1:length(fPaths) % Assemble the list
+    eventFields = {};
     EEG = pop_loadset(fPaths{k});
+    eventFields = union(eventFields, fieldnames(EEG.event));
     EEG = writetags(EEG, p.fMap, 'PreserveTagPrefixes', ...
         p.PreserveTagPrefixes);
     pop_saveset(EEG, 'filename', EEG.filename, 'filepath', EEG.filepath);
 end
 if isStudy
     % Rewrite to the study file
-    study.STUDY = writetags(study.STUDY, p.fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes);
+    study.STUDY = writetags(study.STUDY, p.fMap, 'Fields', eventFields, ...
+        'PreserveTagPrefixes', p.PreserveTagPrefixes);
     save(p.location, '-struct', 'study');
 end
 

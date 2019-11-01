@@ -67,7 +67,7 @@ issues = validate(p);
         % Validates the eeg structure
         if isfield(p.EEG.event, 'usertags') || ...
                 isfield(p.EEG.event, 'hedtags')
-            p.issues = parseeeg(p.hedXml, p.EEG.event, p.generateWarnings);
+            p.issues = parseeeg(p.hedXml, p.EEG, p.generateWarnings);
             issues = p.issues;
             if p.writeOutputToFile
                 writeOutputFile(p);
@@ -121,10 +121,10 @@ issues = validate(p);
         errorFile = fullfile(p.dir, ['validated_' p.file p.ext]);
         fileId = fopen(errorFile,'w');
         if ~empty
-        fprintf(fileId, '%s', p.issues{1});
-        for a = 2:numErrors
-            fprintf(fileId, '\n%s', p.issues{a});
-        end
+        fprintf(fileId, '%s', p.issues);
+%         for a = 2:numErrors
+%             fprintf(fileId, '\n%s', p.issues{a});
+%         end
         else
             fprintf(fileId, 'No issues were found.');
         end

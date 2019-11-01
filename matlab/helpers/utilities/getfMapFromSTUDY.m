@@ -5,16 +5,16 @@
 %
 % Usage:
 %
-%   >>  [fMap, fPaths] = tagstudy(studyFile)
+%   >>  [fMap, fPaths] = tagstudy(EEG)
 %
-%   >>  [fMap, fPaths] = tagstudy(studyFile, 'key1', 'value1', ...)
+%   >>  [fMap, fPaths] = tagstudy(EEG, 'key1', 'value1', ...)
 %
 % Input:
 %
 %   Required:
 %
-%   studyFile
-%                    The path to an EEG study.
+%   EEG
+%                    Structure array containing EEG datasets of a STUDY.
 %
 %   Optional (key/value):
 %
@@ -74,20 +74,11 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function [fMap, fPaths] = tagstudy(study, varargin)
-if isstruct(study)
-    p = parseArguments(varargin{:});
-    fPaths = getstudyfiles(study);
-else
-    p = parseArguments('StudyFile', study, varargin{:});
-    [~, fPaths] = loadstudy(p.StudyFile);
-end
-if isempty(fPaths)
-    fMap = '';
-    warning('tagstudy:nofiles', 'No files in study\n');
-    return;
-end
-fMap = findStudyTags(p, fPaths);
+function fMap = getfMapFromSTUDY(EEG, varargin)
+
+p = parseArguments(varargin{:});
+
+fMap = findStudyTags(EEG, p);
 if ~isempty(p.BaseMap)
     fMap = mergeBaseTags(p, fMap);
 end
@@ -103,14 +94,15 @@ end
             p.EventFieldsToIgnore), {});
     end % mergeBaseTags
  
-    function [fMap, studyFields] = findStudyTags(p, fPaths)
-        % Find the existing tags from the study datasets
+    function [fMap, studyFields] = findStudyTags(EEG, p)
         fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
+        
+        % Find the existing tags from the study datasets
         studyFields = {};
-        for k = 1:length(fPaths) % Assemble the list
-            eegTemp = pop_loadset(fPaths{k});
-            studyFields = union(studyFields, fieldnames(eegTemp.event));
-            fMapTemp = findtags(eegTemp, 'PreserveTagPrefixes', ...
+        for k = 1:length(EEG) % Assemble the list
+            %eegTemp = pop_loadset(fPaths{k});
+            studyFields = union(studyFields, fieldnames(EEG(k).event));
+            fMapTemp = findtags(EEG(k), 'PreserveTagPrefixes', ...
                 p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
                 p.EventFieldsToIgnore, 'HedXml', p.HedXml);
             fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});

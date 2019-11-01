@@ -8,18 +8,14 @@
 %
 % Usage:
 %
-%   >>  [fMap, fPaths, com] = pop_tagstudy()
-%
-%   >>  [fMap, fPaths, com] = pop_tagstudy(UseGui, 'key1', value1 ...)
-%
-%   >>  [fMap, fPaths, com] = pop_tagstudy('key1', value1 ...)
+%   >>  [EEG, fMap, com] = pop_tagstudy(EEG, 'key1', value1 ...)
 %
 % Input:
 %
 %   Required:
 %
-%   studyFile
-%                    The path to an EEG study.
+%   EEG
+%                    Structure array containing info of all datasets of a STUDY 
 %
 %   Optional (key/value):
 %
@@ -27,14 +23,6 @@
 %                    A fieldMap object or the name of a file that contains
 %                    a fieldMap object to be used to initialize tag
 %                    information.
-%
-%   'CopyDatasets'
-%                    If true, copy the datasets to the 'CopyDestination'
-%                    directory and write the HED tags to them.
-%
-%   'CopyDestination'
-%                    The full path of a directory to copy the original
-%                    datasets to and write the HED tags to them.
 %
 %   'EventFieldsToIgnore'
 %                    A one-dimensional cell array of field names in the
@@ -103,9 +91,6 @@
 %                    fieldMap object to. This file is meant to be
 %                    stored outside of the HEDTools.
 %
-%   'StudyFile'
-%                    The path to an EEG study.
-%
 %   'UseCTagger'
 %                    If true (default), the CTAGGER GUI is used to edit
 %                    field tags.
@@ -120,20 +105,23 @@
 %
 % Output:
 %
+%   EEG
+%                    Structure array containing all datasets of the STUDY
+%                    with HED tags
+%
+%
 %   fMap
 %                    A fieldMap object that contains the tag map
 %                    information
 %
-%   fPaths
-%                    A fieldMap object that contains the tag map
-%                    information
 %   com
 %                    String containing call to tagstudy with all
 %                    parameters.
 %
-% Copyright (C) 2012-2016 Thomas Rognon tcrognon@gmail.com,
+% Copyright (C) 2012-2019 Thomas Rognon tcrognon@gmail.com,
 % Jeremy Cockfield jeremy.cockfield@gmail.com, and
 % Kay Robbins kay.robbins@utsa.edu
+% Dung Truong dutruong@ucsd.edu
 %
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -149,75 +137,53 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function [fMap, fPaths, com] = pop_tagstudy(STUDY, varargin)
-fMap = '';
-fPaths = '';
-com = '';
- 
-if exist('STUDY','var')
-    p = parseArguments(STUDY,varargin{:});
-else
-    p = parseArguments('',varargin{:});
+function [EEG, fMap, com] = pop_tagstudy(EEG, varargin)
+
+if nargin < 1
+    help pop_tagstudy;
+    return;
 end
+
+fMap = '';
+% fPaths = '';
+com = '';
+
+p = parseArguments(varargin{:});
  
 % Call function with menu
+fprintf('Begin tagging...\n');
 if p.UseGui
     % Get the menu input parameters
     menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
         'HedXml', 'InDir', ...
-        'PreserveTagPrefixes', 'SelectEventFields', 'StudyFile', ...
-        'UseCTagger'}, varargin{:});
+        'PreserveTagPrefixes', 'SelectEventFields', 'UseCTagger'}, varargin{:});
     % Get the input parameters
     [canceled, baseMap, hedExtensionsAllowed, ...
         hedXml, preserveTagPrefixes, ...
-        selectEventFields, studyFile, useCTagger] = ...
-        pop_tagstudy_input(menuInputArgs{:}, 'hasSTUDY', p.hasSTUDY);
+        selectEventFields, useCTagger] = ...
+        pop_tagstudy_input(menuInputArgs{:});
     menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
         hedExtensionsAllowed, ...
         'HedXml', hedXml, 'PreserveTagPrefixes', ...
         preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
-        'StudyFile', studyFile, 'UseCTagger', useCTagger};
+        'UseCTagger', useCTagger};
     if canceled
         return;
     end
     
     ignoreEventFields =  getkeyvalue({'EventFieldsToIgnore'}, varargin{:});
-    tagstudyInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
+    getfMapInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
         'PreserveTagPrefixes'}, menuOutputArgs{:}) ignoreEventFields];
     
     canceled = false;
     
     % Merge base map
-    if p.hasSTUDY
-        [fMap, fPaths] = tagstudy(STUDY, tagstudyInputArgs{:});
-    else
-        [fMap, fPaths] = tagstudy(studyFile, tagstudyInputArgs{:});
-    end
+    fMap = getfMapFromSTUDY(EEG, getfMapInputArgs{:});
     
     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
         menuOutputArgs{:});
     selectEventFields = taggerMenuArgs{2};
     useCTagger = taggerMenuArgs{4};
-    
-%     % Select fields to tag
-%     ignoredEventFields = {};
-%     if useCTagger && selectEventFields
-%         selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
-%             varargin{:});
-%         [canceled, ignoredEventFields] = selectmaps(fMap, ...
-%             selectmapsInputArgs{:});
-%     else
-%         fMap.setPrimaryMap(p.PrimaryEventField);
-%     end
-%     selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
-%     
-%     % Use CTagger
-%     if useCTagger && ~canceled
-%         editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', ...
-%             'PreserveTagPrefixes'}, ...
-%             menuOutputArgs{:}) selectmapsOutputArgs];
-%         [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
-%     end
  
     % if use Ctagger
     if useCTagger && ~canceled
@@ -240,6 +206,13 @@ if p.UseGui
         return;
     end
     fprintf('Tagging complete\n');
+    
+    fprintf('Saving tags... ');
+    for k = 1:length(EEG)
+	    EEG(k) = writetags(EEG(k), fMap, 'PreserveTagPrefixes', ...
+           p.PreserveTagPrefixes);
+    end
+    fprintf('Done.\n');
     
     inputArgs = [menuOutputArgs ignoreEventFields];
     % Save HED if modified
@@ -265,16 +238,18 @@ if p.UseGui
         'FMapSaveFile', fMapSaveFile};
     
     % Save datasets
-    saveheddatasetsInputArgs = getkeyvalue({'CopyDatasets', ...
-        'CopyDestination', 'OverwriteDatasets'}, varargin{:});
-    if p.hasSTUDY
-        studyFile = fullfile(STUDY.filepath, STUDY.filename);
+    answer = questdlg2('Do you want to overwrite the original datasets to include the HED tags?','Save datasets');
+    if strcmp(answer,'Yes')
+        overwriteDatasets = true;
+    else
+        overwriteDatasets = false;
     end
-    [fMap, copyDatasets, copyDestination, overwriteDatasets] = ...
-        pop_saveheddatasets(fMap, studyFile, saveheddatasetsInputArgs{:});
-    saveheddatasetsOutputArgs = {'CopyDatasets', copyDatasets, ...
-        'CopyDestination', copyDestination, 'OverwriteDatasets', ...
-        overwriteDatasets};
+    saveheddatasetsOutputArgs = {'OverwriteDatasets', overwriteDatasets};
+    if overwriteDatasets
+        for i=1:length(EEG)
+           pop_saveset(EEG(i), 'filename', EEG(i).filename, 'filepath', EEG(k).filepath);
+        end
+    end
     
     % Build command string
     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
@@ -285,29 +260,19 @@ if nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});
-    [fMap, fPaths] = tagstudy(p.StudyFile, inputArgs{:});
+    fMap = getfMapFromSTUDY(EEG, inputArgs{:});
 end
  
 com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
  
 % STUDY take precedence over studyfile
-    function p = parseArguments(STUDY,varargin)
-        if ~isempty(STUDY)
-            if isstruct(STUDY) 
-                varargin = ['hasSTUDY', true, varargin];
-            else
-                varargin = [STUDY varargin];
-            end    
-        end
+    function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
         parser.addOptional('UseGui', true, @islogical);
         parser.addParamValue('BaseMap', '', @(x) isa(x, 'fieldMap') || ...
             ischar(x));
-        parser.addParamValue('CopyDatasets', false, @islogical);
-        parser.addParamValue('CopyDestination', '', @(x) ...
-            (isempty(x) || (ischar(x))));
         parser.addParamValue('EventFieldsToIgnore', ...
             {'latency', 'epoch', 'urevent', 'hedtags', 'usertags'}, ...
             @iscellstr);
@@ -324,13 +289,10 @@ com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
         parser.addParamValue('SelectEventFields', true, @islogical);
         parser.addParamValue('SeparateUserHedFile', '', @(x) ...
             (isempty(x) || (ischar(x))));
-        parser.addParamValue('StudyFile', '', ...
-            @(x) (~isempty(x) && exist(x, 'file')));
         parser.addParamValue('UseCTagger', true, @islogical);
         parser.addParamValue('WriteFMapToFile', false, @islogical);
         parser.addParamValue('WriteSeparateUserHedFile', false, ...
             @islogical);
-        parser.addParamValue('hasSTUDY', false, @islogical);
         parser.parse(varargin{:});
         p = parser.Results;
     end % parseArguments

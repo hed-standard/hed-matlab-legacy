@@ -37,10 +37,12 @@
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-function issues = validateHedStrings(hedxml, hedStrings, generateWarnings)
+function issues = validateHedStrings(hedxml, validatingItems, generateWarnings)
 % set up server destination
-host = 'http://visualtest.cs.utsa.edu/hed';
-url = [host '/eegsubmit'];
+host = 'http:///localhost:33000';
+% host = 'http://34.68.100.24';
+% host = 'http://127.0.0.1:5000';
+% host = 'http://visual.cs.utsa.edu/hed';
 
 % retrieve CSRF token and cookies
 [~,response] = system(['curl -v ' host '/eegvalidation']);
@@ -55,9 +57,11 @@ else
 end
 
 % submit request to server for validation results
+url = [host '/eegsubmit'];
 try
+    json_text = toJson(validatingItems);
     fprintf(['Validating through server at ' url ' ...\n']);
-    command = sprintf('curl -X POST -H "X-CSRFToken: %s" -H "Cookie: %s" -F hed_xml_file=%s -F hed_strings=''{"hed_strings":%s};type=application/json'' -F check_for_warnings=%d %s', csrftoken, cookie, hed_xml_file, jsonencode(hedStrings), generateWarnings, url);
+    command = sprintf('curl -X POST -H "X-CSRFToken: %s" -H "Cookie: %s" -F hed_xml_file=%s -F hed_strings=''%s;type=application/json'' -F check_for_warnings=%d %s', csrftoken, cookie, hed_xml_file, json_text, generateWarnings, url);
     [status, result] = system(command);
 catch
     ME = MException('validateHedString:serverError', ...
@@ -88,5 +92,21 @@ end
         tmp = str(cookieIdx(1)+strlength("Set-Cookie")+2:end);
         cookie = regexp(tmp,'session.*?;','match');
         cookie = cookie{1}(1:end-1);
+    end
+    
+    %%%
+    % Build json string to be submitted to the validation server
+    % json format is in sync with validation server's expectation
+    %
+    function json_text = toJson(validatingItems)
+        json_text = '{';
+        for i=1:numel(validatingItems)
+            item = validatingItems(i);
+            json_text = [json_text '"' item.value '": {"type":"' item.type '", "typeValue":"' item.typeName ,'", "hed_string":' jsonencode(item.hedString) '}']; %jsonencode(hedStrings)
+            if i ~= numel(validatingItems)
+                json_text = [json_text ','];
+            end
+        end
+        json_text = [json_text '}'];
     end
 end

@@ -48,9 +48,9 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-function fPaths = validatestudy(studyFile, varargin)
-p = parseArguments(studyFile, varargin{:});
-fPaths = validate(p);
+function issues = validatestudy(EEG, varargin)
+p = parseArguments(varargin{:});
+issues = validate(EEG, p);
 
     function hedMaps = getHEDMaps(p)
         % Gets a structure that contains Maps associated with the HED XML
@@ -58,37 +58,82 @@ fPaths = validate(p);
         hedMaps = loadHEDMaps();
         mapVersion = hedMaps.version;
         xmlVersion = getxmlversion(p.hedXml);
-        if ~isempty(xmlVersion) && ~strcmp(mapVersion, xmlVersion);
+        if ~isempty(xmlVersion) && ~strcmp(mapVersion, xmlVersion)
             hedMaps = mapattributes(p.hedXml);
         end
     end % getHEDMaps
 
-    function fPaths = validate(p)
+    function issues = validate(EEG, p)
         % Validates all .set files in the input directory
         p.hedMaps = getHEDMaps(p);
-        [~, fPaths] = loadstudy(p.studyFile);
-        numFiles = length(fPaths);
+%         [~, fPaths] = loadstudy(p.studyFile);
+
+        validatingItems = [];
+        % get HED string items to be validated from fMap
+        fMap = getfMapFromSTUDY(EEG);
+        fMapStruct = fMap.getStruct();
+        eventCode_tagMaps_of_fields = fMapStruct.map;     
+        for i=1:numel(eventCode_tagMaps_of_fields)
+            field_eventCode_tagMaps = eventCode_tagMaps_of_fields(i);
+            eventCodes_tagMaps = field_eventCode_tagMaps.values;
+            for k=1:numel(eventCodes_tagMaps)
+                eventCode_tagMap = eventCodes_tagMaps(k);
+                if ~isempty(eventCode_tagMap.tags)
+                    item.type = 'fieldValue';
+                    item.typeName = field_eventCode_tagMaps.field;
+                    item.value = eventCode_tagMap.code;
+                    item.hedString = cellArray2String(eventCode_tagMap.tags);
+                    validatingItems = [validatingItems item];
+                end
+            end
+        end
+
         nonTaggedSets = {};
         nonTagedIndex = 1;
-        for a = 1:numFiles
-            p.EEG = pop_loadset(fPaths{a});
-            p.fPath = fPaths{a};
-            if isfield(p.EEG.event, 'usertags') || ...
-                    isfield(p.EEG.event, 'hedtags')
-                p.issues = parseeeg(p.hedXml, ...
-                    p.EEG.event, p.generateWarnings);
-                writeOutputFiles(p);
+        % get HED string items to be validated from individual dataset's
+        % event.hedtags field
+        for a = 1:numel(EEG)
+%             p.EEG = pop_loadset(fPaths{a});
+%             p.fPath = fPaths{a};
+            if isfield(EEG(a).event, 'usertags') || ...
+                    isfield(EEG(a).event, 'hedtags') % check if the dataset is tagged or not
+                if (isfield(EEG(a).event, 'hedtags'))
+                    hedTags = {EEG(a).event.hedtags};
+                    hasHedTags = cellfun(@(x) ~isempty(x), hedTags);
+                    indices = find(hasHedTags);
+                    for c=1:numel(indices)
+                    	item.type = ['eventSpecific'];
+                        if ~isempty(EEG(a).setname)
+                            item.typeName = EEG(a).setname;
+                        else
+                            item.typeName = EEG(a).filename;
+                        end
+                        item.value =  num2str(indices(c));
+                        item.hedString = hedTags{indices(c)};
+                        validatingItems = [validatingItems item];
+                    end
+                end
+%                 p.issues = parseeeg(p.hedXml, ...
+%                     p.EEG.event, p.generateWarnings);
+%                 writeOutputFiles(p);
             else
-                if ~isempty(p.EEG.filename)
-                    nonTaggedSets{nonTagedIndex} = p.EEG.filename; %#ok<AGROW>
+                if ~isempty(EEG(a).filename)
+                    nonTaggedSets{nonTagedIndex} = EEG(a).filename; %#ok<AGROW>
                 else
-                    nonTaggedSets{nonTagedIndex} = p.EEG.setname; %#ok<AGROW>
+                    nonTaggedSets{nonTagedIndex} = EEG(a).setname; %#ok<AGROW>
                 end
                 nonTagedIndex = nonTagedIndex + 1;
             end
         end
-        if ~isempty(nonTaggedSets)
-            printNonTaggedDatasets(nonTaggedSets);
+        if ~isempty(validatingItems)
+            if ~isempty(nonTaggedSets)
+                printNonTaggedDatasets(nonTaggedSets);
+            end
+            issues = validateHedStrings(p.hedXml, validatingItems, p.generateWarnings);
+%             writeOutputFiles(p);
+        else
+            warning('No tag found. Please tag datasets before validating.');
+            return;
         end
     end % validate
 
@@ -148,28 +193,28 @@ fPaths = validate(p);
         hedMaps = Maps.hedMaps;
     end % loadHEDMap
 
-    function p = parseArguments(studyFile, varargin)
+    function p = parseArguments(varargin)
         % Parses the arguements passed in and returns the results
         p = inputParser();
-        p.addRequired('studyFile', @(x) (~isempty(x) && ischar(x)));
+%         p.addRequired('studyFile', @(x) (~isempty(x) && ischar(x)));
         p.addParamValue('generateWarnings', false, ...
             @(x) validateattributes(x, {'logical'}, {}));
         p.addParamValue('hedXml', 'HED.xml', ...
             @(x) (~isempty(x) && ischar(x)));
         p.addParamValue('outputFileDirectory', pwd, ...
             @(x) ischar(x));
-        p.parse(studyFile, varargin{:});
+        p.parse(varargin{:});
         p = p.Results;
     end % parseArguments
 
-    function writeOutputFiles(p)
+    function writeOutputFiles(p, EEG)
         % Writes the issues and replace tags found to a log file and a
         % replace file
         p.dir = p.outputFileDirectory;
-        if ~isempty(p.EEG.filename)
-            [~, p.file] = fileparts(p.EEG.filename);
+        if ~isempty(EEG.filename)
+            [~, p.file] = fileparts(EEG.filename);
         else
-            [~, p.file] = fileparts(p.EEG.setname);
+            [~, p.file] = fileparts(EEG.setname);
         end
         p.ext = '.txt';
         try
@@ -200,5 +245,16 @@ fPaths = validate(p);
         end
         fclose(fileId);
     end % createLogFile
+    
+    function hedString = cellArray2String(cellArr)
+        hedString = '';
+        for i=1:numel(cellArr)
+            hedString = [hedString cellArr{i}];
+            if i < numel(cellArr)
+                hedString = [hedString ', '];
+            end
+        end
+    end
+    
 
 end % validatestudy

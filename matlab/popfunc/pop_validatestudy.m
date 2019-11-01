@@ -1,4 +1,4 @@
-% Allows a user to validate the HED tags in a EEGLAB study and its
+% Allows a user to validate the HED tags in an EEGLAB study and its
 % associated .set files using a GUI.
 %
 % Usage:
@@ -63,8 +63,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-function [fPaths, com] = pop_validatestudy(varargin)
-fPaths = '';
+function [issues, com] = pop_validatestudy(EEG, varargin)
 com = '';
 
 p = parseArguments(varargin{:});
@@ -73,27 +72,30 @@ p = parseArguments(varargin{:});
 if p.UseGui
     menuInputArgs = getkeyvalue({'GenerateWarnings', 'HedXml', 'InDir', ...
         'OutputFileDirectory', 'StudyFile'}, varargin{:});
-    [canceled, generateWarnings, hedXML, outDir, studyFile] = ...
+    [canceled, generateWarnings, hedXML, outDir] = ...
         pop_validatestudy_input(menuInputArgs{:});
     if canceled
         return;
     end
     inputArgs = {'GenerateWarnings', generateWarnings, 'HedXml', ...
-        hedXML, 'OutputFileDirectory', outDir, 'StudyFile', studyFile};
-    fPaths = validatestudy(studyFile, inputArgs{:});
-    com = char(['pop_validatestudy(' logical2str(p.UseGui) ', ' ...
+        hedXML, 'OutputFileDirectory', outDir};
+    issues = validatestudy(EEG, inputArgs{:});
+    com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
         keyvalue2str(varargin{:}) ');']);
 else
     % Call function without menu
-    if isempty(p.StudyFile)
-        warning('Study file is not specified... exiting function');
-        return;
+%     if isempty(p.StudyFile)
+%         warning('Study file is not specified... exiting function');
+%         return;
+%     end
+    if isempty(EEG) || ~isstruct(EEG)
+        warning('STUDY EEG struct array is not specified... exiting function');
     end
     if nargin > 1
         inputArgs = getkeyvalue({'GenerateWarnings', ...
-            'HedXml', 'OutputFileDirectory', 'StudyFile'}, varargin{:});
-        fPaths = validatestudy(p.StudyFile, inputArgs{:});
-        com = char(['pop_validatestudy(' logical2str(p.UseGui) ', ' ...
+            'HedXml', 'OutputFileDirectory'}, varargin{:});
+        issues = validatestudy(p.StudyFile, inputArgs{:});
+        com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
             keyvalue2str(varargin{2:end}) ');']);
     end
 end

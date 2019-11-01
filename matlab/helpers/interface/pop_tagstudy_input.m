@@ -68,7 +68,7 @@
  
 function [canceled, baseMap, hedExtensionsAllowed, ...
     hedXml, preserveTagPrefixes, ...
-    selectEventFields, studyFile, useCTagger] = ...
+    selectEventFields, useCTagger] = ...
     pop_tagstudy_input(varargin)
 p = parseArguments(varargin{:});
 baseMap = p.BaseMap;
@@ -77,17 +77,11 @@ hedExtensionsAllowed = p.HedExtensionsAllowed;
 hedXml = p.HedXml;
 preserveTagPrefixes = p.PreserveTagPrefixes;
 selectEventFields = p.SelectEventFields;
-studyFile = p.StudyFile;
 useCTagger = p.UseCTagger;
-if p.hasSTUDY
-    isStudyFileVisible = 'off';
-else
-    isStudyFileVisible = 'on';
-end
+
 title = 'Inputs for tagging EEG study';
 %% Defining GUI elements
 geometry = {[0.3 1 0.2] ...
-            [0.3 1 0.2] ...
             [0.3 1 0.2] ...
             [0.3 1] ...
             [0.3 1] ...
@@ -96,9 +90,6 @@ uilist = {...
     {'Style', 'text', 'string', 'HED Schema'} ...
     {'Style', 'edit', 'string', hedXml, 'tag', 'HEDpath', 'TooltipString', 'The HED XML file', 'Callback', {@hedEditBoxCallback}} ...
     {'Style', 'pushbutton', 'string', '...', 'callback', @browseHEDFileCallBack} ...
-    {'Style', 'text', 'string', 'Study file', 'Visible', isStudyFileVisible} ...
-    {'Style', 'edit', 'string', studyFile, 'tag', 'StudyPath', 'TooltipString', 'Path to .study file', 'Callback', {@studyEditboxCallback}, 'Visible', isStudyFileVisible} ...
-    {'Style', 'pushbutton', 'string', '...', 'callback', @browseStudyCallBack, 'Visible', isStudyFileVisible} ...
     {'Style', 'text', 'string', 'Import tagfile'} ...
     {'Style', 'edit', 'string', baseMap, 'tag', 'fMapPath', 'TooltipString', 'FieldMap file (.mat) containing events and their associated HED tags', 'Callback', {@baseMapEditboxCallback}} ...
     {'Style', 'pushbutton', 'string', '...', 'callback', @browseBaseMapCallBack} ...
@@ -122,13 +113,7 @@ uilist = {...
        
 %% Set values accordingly 
 if ~isempty(structout)  % if not canceled
-    if isempty(structout.StudyPath) && ~p.hasSTUDY
-        warndlg('No STUDY path was provided. Tagging was canceled', 'Empty path','modal');
-        canceled = true;
-        return;
-    end
     hedXml = structout.HEDpath;
-    studyFile = structout.StudyPath;
     baseMap = structout.fMapPath;
     useCTagger = logical(structout.UseCTAGGER);
     if useCTagger 
@@ -164,27 +149,6 @@ end
             set(findobj('Tag', 'HEDpath'), 'String', HEDFile);
         end
     end % browseHEDFileCallBack
-    function browseStudyCallBack(~, ~)
-        % Callback for field map 'Browse' button
-        [file,path] = uigetfile2({'*.study';'*.STUDY'}, 'Load STUDY file', 'multiselect', 'off');
-        [~, ~, ext] = fileparts(file);
-        if strcmp(lower(ext), ".study")
-            STUDYFile = fullfile(path, file);
-            set(findobj('Tag', 'StudyPath'), 'String', STUDYFile);
-        end
-    end % browseStudyCallBack
- 
-    function studyEditboxCallback(src, ~)
-        % Callback for user directly editing the HED XML editbox
-        studyPath = get(src, 'String');
-        [~, ~, ext] = fileparts(studyPath);
-        if ~isempty(strtrim(studyPath)) && (~exist(studyPath, 'file') || strcmp(lower(ext), ".study") == 0)
-           errordlg(['STUDY file is invalid. Resetting'], ...
-                'Invalid file', 'modal');
-           set(src, 'String', studyFile);
-        end
-        
-    end % studyEditboxCallback
  
     function baseMapEditboxCallback(src, ~)
         % Callback for user directly editing the 'Base tags' editbox
