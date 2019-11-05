@@ -80,6 +80,9 @@ if p.UseGui
     inputArgs = {'GenerateWarnings', generateWarnings, 'HedXml', ...
         hedXML, 'OutputFileDirectory', outDir};
     issues = validatestudy(EEG, inputArgs{:});
+    if isempty(issues)
+        fprintf('No issue found');
+    end
     com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
         keyvalue2str(varargin{:}) ');']);
 else
@@ -95,6 +98,9 @@ else
         inputArgs = getkeyvalue({'GenerateWarnings', ...
             'HedXml', 'OutputFileDirectory'}, varargin{:});
         issues = validatestudy(p.StudyFile, inputArgs{:});
+        if isempty(issues)
+            fprintf('No issue found');
+        end
         com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
             keyvalue2str(varargin{2:end}) ');']);
     end
