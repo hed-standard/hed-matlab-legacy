@@ -138,7 +138,7 @@ classdef tagList < hgsetget
             keysBoth = intersect(keys1, keys2);
             keysRemoved = setdiff(keys2, keysBoth);  % keys not in both
             for k = 1:length(keysRemoved)
-                obj.remove(keysRemoved);
+                obj.remove(keysRemoved{k});
             end
         end % intersect
         
@@ -446,11 +446,12 @@ classdef tagList < hgsetget
             elseif ischar(telement)
                 tstring = strtrim(telement);
             elseif iscellstr(telement)
-                tstring = strtrim(telement{1});
+                tstring = ['(' strtrim(telement{1})];
                 for k = 2:length(telement)
                     tstring = [tstring ',' ...
                         strtrim(telement{k})]; %#ok<AGROW>
                 end
+                tstring = [tstring ')'];
             else
                 errormsg = 'element is not string or cellstr';
             end

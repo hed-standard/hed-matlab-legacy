@@ -13,12 +13,7 @@ for k = 1:length(uniqueValues)
         theseTags = tags(theseValues);
         myTagList = tagList(uniqueValues{k});
         if ~isempty(theseTags)
-            myTagList.addString(theseTags{1});
-            for j = 2:length(theseTags)
-                newList = tagList(uniqueValues{k});
-                newList.addString(theseTags{j});
-                myTagList.intersect(newList);
-            end
+            myTagList.addList(theseTags);
         end
         tMap.addValue(myTagList);
     end
@@ -30,5 +25,27 @@ end
         p.addRequired('events', @(x) ~isempty(x) && isstruct(x));
         p.addRequired('valueField', @(x) ~isempty(x) && ischar(x));
     end % parseArguments
+
+    function intersection = getIntersectingTags(allTagStrings)
+    % Extract intersection of all tag sets
+        tagsArray = cell(1, numel(allTagStrings));
+        intersection = [];
+        for i=1:numel(allTagStrings)
+            tagsArray(i) = {tagList.deStringify(allTagStrings{i})};
+        end
+        firstTags = tagsArray{1};
+        for i=1:numel(firstTags)
+            isInSet = true;
+            for t=2:numel(tagsArray)
+                if all(~strcmpi(firstTags{i},tagsArray{t}))
+                    isInSet = false;
+                    break;
+                end
+            end
+            if isInSet
+                intersection = [intersection firstTags(i)];
+            end
+        end
+    end
 
 end % extracttags
