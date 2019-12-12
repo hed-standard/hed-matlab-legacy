@@ -143,10 +143,12 @@ end
     function browseHEDFileCallBack(~, ~)
         % Callback for field map 'Browse' button
         [file,path] = uigetfile2({'*.xml';'*.XML'}, 'Load HED Schema', 'multiselect', 'off');
-        [~, ~, ext] = fileparts(file);
-        if strcmp(lower(ext), ".xml")
-            HEDFile = fullfile(path, file);
-            set(findobj('Tag', 'HEDpath'), 'String', HEDFile);
+        if file ~= 0
+            [~, ~, ext] = fileparts(file);
+            if strcmp(lower(ext), ".xml")
+                HEDFile = fullfile(path, file);
+                set(findobj('Tag', 'HEDpath'), 'String', HEDFile);
+            end
         end
     end % browseHEDFileCallBack
  
@@ -163,9 +165,11 @@ end
  
     function browseBaseMapCallBack(~, ~)
         [file, path] = uigetfile({'*.mat';'*.MAT'}, 'Browse for FieldMap file (*.mat)');
-        tagsFile = fullfile(path, file);
-        if ischar(tagsFile) && ~isempty(tagsFile) && isValidBaseTags(tagsFile)
-            set(findobj('Tag', 'fMapPath'), 'String', tagsFile);
+        if file ~= 0
+            tagsFile = fullfile(path, file);
+            if ischar(tagsFile) && ~isempty(tagsFile) && isValidBaseTags(tagsFile)
+                set(findobj('Tag', 'fMapPath'), 'String', tagsFile);
+            end
         end
     end % browsefMapCallBack
  

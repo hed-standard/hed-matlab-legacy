@@ -65,6 +65,7 @@
 
 function [issues, com] = pop_validatestudy(EEG, varargin)
 com = '';
+issues = '';
 
 p = parseArguments(varargin{:});
 

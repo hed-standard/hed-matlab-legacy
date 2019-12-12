@@ -23,14 +23,6 @@
 %                    false, the HED can not be extended. The 
 %                    'ExtensionAnywhere argument determines where the HED
 %                    can be extended if extension are allowed.
-%                  
-%
-%   hedExtensionsAnywhere
-%                    If true, the HED can be extended underneath all tags.
-%                    If false (default), the HED can only be extended where
-%                    allowed. These are tags with the 'extensionAllowed'
-%                    attribute or leaf tags (tags that do not have
-%                    children).
 %
 %   hedXml         
 %                    Full path to a HED XML file. The default is the 
@@ -141,10 +133,12 @@ end
         % Callback for 'Browse' button that sets the 'Base tags' editbox
         [file, path] = uigetfile({'*.mat', 'MATLAB Files (*.mat)'}, ...
             'Browse for event tags');
-        tagsFile = fullfile(path, file);
-        if ischar(file) && ~isempty(file) && validateBaseTags(tagsFile)
-            baseMap = tagsFile;
-            set(findobj('Tag', 'BaseTags'), 'String', baseMap);
+        if file ~= 0
+            tagsFile = fullfile(path, file);
+            if ischar(file) && ~isempty(file) && validateBaseTags(tagsFile)
+                baseMap = tagsFile;
+                set(findobj('Tag', 'BaseTags'), 'String', baseMap);
+            end
         end
     end % browseBaseTagsCallback
 
