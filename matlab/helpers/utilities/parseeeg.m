@@ -56,17 +56,17 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-function issues = parseeeg(hedXml, EEG, generateWarnings)
-p = parseArguments(hedXml, EEG, generateWarnings);
+function issues = parseeeg(hedXml, events, generateWarnings)
+p = parseArguments(hedXml, events, generateWarnings);
 issues = validateEventsTags(p);
 
-    function p = parseArguments(hedXml, EEG, generateWarnings)
+    function p = parseArguments(hedXml, events, generateWarnings)
         % Parses the arguements passed in and returns the results
         parser = inputParser;
         parser.addRequired('hedXml', @(x) (~isempty(x) && ischar(x)));
-        parser.addRequired('EEG', @(x) (~isempty(x) && isstruct(x)));
+        parser.addRequired('events', @(x) (~isempty(x) && isstruct(x)));
         parser.addRequired('generateWarnings', @islogical);
-        parser.parse(hedXml, EEG, generateWarnings);
+        parser.parse(hedXml, events, generateWarnings);
         p = parser.Results;
     end % parseArguments
 
@@ -75,50 +75,13 @@ issues = validateEventsTags(p);
         p.issues = {};
         p.replaceTags = {};
         p.issueCount = 1;
-        validatingItems = struct([]);
-        
-        % get HED string items to be validated from fMap
-        fMap = findtags(p.EEG, 'HedXml', p.hedXml);
-        fMapStruct = fMap.getStruct();
-        eventCode_tagMaps_of_fields = fMapStruct.map;     
-        for i=1:numel(eventCode_tagMaps_of_fields)
-            field_eventCode_tagMaps = eventCode_tagMaps_of_fields(i);
-            eventCodes_tagMaps = field_eventCode_tagMaps.values;
-            for k=1:numel(eventCodes_tagMaps)
-                eventCode_tagMap = eventCodes_tagMaps(k);
-                if ~isempty(eventCode_tagMap.tags)
-                    item.type = 'fieldValue';
-                    item.typeName = field_eventCode_tagMaps.field;
-                    item.value = eventCode_tagMap.code;
-                    item.hedString = cellArray2String(eventCode_tagMap.tags);
-                    validatingItems = [validatingItems item];
-                end
-            end
-        end
-        
-        % get HED string items to be validated from the dataset's
-        % event.hedtags field if exist
-        events = p.EEG.event;
-        numberEvents = length(events);
-        if isfield(events, 'hedtags')
-            for a = 1:numberEvents
-                if ~isempty(events(a).hedtags)
-                    item.type = 'eventSpecific';
-                    if ~isempty(p.EEG.setname)
-                        item.typeName = p.EEG.setname;
-                    else
-                        item.typeName = p.EEG.filename;
-                    end
-                    item.value = num2str(a);
-                    item.hedString = concattags(events(a));       
-                    validatingItems = [validatingItems item];
-                end
-            end 
-        end
-        
-        % validate
+        numberEvents = length(p.events);
+        hedStrings = cell(1,numberEvents);
         try
-            issues = validateHedStrings(p.hedXml,validatingItems,p.generateWarnings);
+            for a = 1:numberEvents
+                hedStrings{a} = concattags(p.events(a));             
+            end
+            issues = validateHedStrings(p.hedXml,hedStrings,p.generateWarnings);
         catch ME
             if ME.identifier == "validateHedString:serverError"
                 throw(ME);
@@ -129,13 +92,4 @@ issues = validateEventsTags(p);
         end
     end % readStructTags
 
-    function hedString = cellArray2String(cellArr)
-        hedString = '';
-        for i=1:numel(cellArr)
-            hedString = [hedString cellArr{i}];
-            if i < numel(cellArr)
-                hedString = [hedString ', '];
-            end
-        end
-    end
 end % parseeeg
