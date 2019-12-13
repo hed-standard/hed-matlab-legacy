@@ -191,7 +191,7 @@ if p.UseGui
         % if select fields to tag
         if selectEventFields
             args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+            [fMap, canceled] = selectFieldAndTag(fMap, args);
         else
             fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
             selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
