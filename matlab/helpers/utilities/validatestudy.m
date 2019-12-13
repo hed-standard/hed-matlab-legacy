@@ -54,16 +54,17 @@ issues = validate(ALLEEG, p);
     function issues = validate(ALLEEG, p)
         issues = [];
         % Validates all .set files in the array structure ALLEEG
-        p.hedMaps = getHEDMaps(p);
+%         p.hedMaps = getHEDMaps(p);
         nonTaggedSets = {};
         nonTagedIndex = 1;
         for a = 1:length(ALLEEG)
             EEG = ALLEEG(a);
             if isfield(EEG.event, 'usertags') || ...
                     isfield(EEG.event, 'hedtags')
-                issues = [issues parseeeg(p.hedXml, ...
-                    EEG.event, p.generateWarnings)];
+                issues = [issues {parseeeg(p.hedXml, ...
+                    EEG.event, p.generateWarnings)}];
             else
+                issues = [issues {"No HED tags found for this file"}];
                 if ~isempty(EEG.filename)
                     nonTaggedSets{nonTagedIndex} = EEG.filename; %#ok<AGROW>
                 else
@@ -112,7 +113,7 @@ issues = validate(ALLEEG, p);
         p.addParamValue('generateWarnings', false, ...
             @(x) validateattributes(x, {'logical'}, {}));
         p.addParamValue('hedXml', 'HED.xml', ...
-            @(x) (~isempty(x) && ischar(x)));e
+            @(x) (~isempty(x) && ischar(x)));
         p.parse(varargin{:});
         p = p.Results;
     end % parseArguments

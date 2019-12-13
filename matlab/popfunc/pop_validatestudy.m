@@ -93,16 +93,12 @@ if p.UseGui
     end
 end
 
-inputArgs = {'GenerateWarnings', p.GenerateWarnings, 'HedXml', p.HedXML};
+inputArgs = {'GenerateWarnings', p.GenerateWarnings, 'HedXml', p.HedXml};
 issues = validatestudy(STUDY, ALLEEG, inputArgs{:});
 
-if isempty(issues)
-    fprintf('No issue found');
-else
-    if p.WriteToOutputFile
-        p.issues = issues;
-        writeOutputFiles(ALLEEG, p);
-    end
+if p.WriteToOutputFile
+    p.issues = issues;
+    writeOutputFiles(ALLEEG, p);
 end
 
     function writeOutputFiles(ALLEEG, p)
@@ -111,7 +107,7 @@ end
         p.dir = p.OutputFileDirectory;
         for i=1:length(ALLEEG)
             EEG = ALLEEG(i);
-            issue = p.issues(i);
+            issue = p.issues{i};
             if ~isempty(EEG.filename)
                 [~, p.file] = fileparts(EEG.filename);
             else
@@ -160,7 +156,7 @@ com = char(['pop_validatestudy(STUDY, ALLEEG,' logical2str(p.UseGui) ', ' ...
             @(x) validateattributes(x, {'logical'}, {}));
         p.addParamValue('HedXml', which('HED.xml'), ...
             @(x) (~isempty(x) && ischar(x)));
-        p.addParamValue('WriteToOutputFile', false, @islogical);
+        p.addParamValue('WriteToOutputFile', true, @islogical);
         p.addParamValue('OutputFileDirectory', pwd, ...
             @(x) ischar(x));
         p.parse(varargin{:});
