@@ -52,10 +52,10 @@
 function eData = writetags(eData, fMap, varargin)
 p = parseArguments(eData, fMap, varargin{:});
 
-tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore);
+tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % exclude fields to ignore
 
 if isfield(eData, 'event') && isstruct(eData.event)
-    tFields = intersect(fieldnames(eData.event), tFields);
+    tFields = intersect(fieldnames(eData.event), tFields); % only write tags to fields that exist in both fMap in EEG.event
     eData = writeIndividualTags(eData, fMap, tFields, ...
         p.PreserveTagPrefixes);
 end

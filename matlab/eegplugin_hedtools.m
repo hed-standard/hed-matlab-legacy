@@ -1,3 +1,4 @@
+
 % eegplugin_hedtools makes a HEDTools plugin for EEGLAB
 %
 % Usage:
@@ -40,88 +41,57 @@
 
 function vers = eegplugin_hedtools(fig, trystrs, catchstrs)
 vers = 'HEDTools2.5.0';
-% Check the number of input arguments
+% Check the number of input argumentsedit 
 if nargin < 3
     error('eegplugin_hedtools requires 3 arguments');
-end;
+end
 
 % Find the path of the current directory
 addhedpaths(true);
 
-% Find 'Edit' in the figure 
-parentMenu = findobj(fig, 'Label', 'Edit');
-
-% Processing for 'Tag current EEG'
-finalcmd = '[EEG, ~, LASTCOM] = pop_tageeg(EEG);';
-ifeegcmd = 'if ~isempty(LASTCOM) && ~isempty(EEG)';
-savecmd = '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);';
-redrawcmd = ' eeglab redraw;';
-finalcmd =  [trystrs.no_check finalcmd ifeegcmd savecmd ...
-    redrawcmd 'end;' catchstrs.add_to_hist];
-
-% Add 'Tag current EEG' to 'Edit'
-uimenu(parentMenu, 'Label', 'Tag current dataset', 'Callback', ...
-    finalcmd, ...
-    'Separator', 'on');
-
-% Processing for 'Validate current EEG'
-finalcmd = '[~, LASTCOM] = pop_validateeeg(EEG);';
-
-% Add 'Validate current EEG' to 'Edit'
-uimenu(parentMenu, 'Label', 'Validate current dataset', 'Callback', ...
-    finalcmd);
-
 % Find 'Memory and other options' in the figure 
-parentMenu = findobj(fig, 'Label', 'File', 'Type', 'uimenu');
-positionMenu = findobj(fig, 'Label', 'Memory and other options', ...
-    'Type', 'uimenu');
-position = get(positionMenu, 'Position');
+parentMenu = findobj(fig, 'Label', 'Edit', 'Type', 'uimenu');
+positionMenu = findobj(fig, 'Label', 'Event values', 'Type', 'uimenu');
+% if isempty(positionMenu)
+%     positionMenu = findobj(fig, 'Label', 'Memory and other options', 'Type', 'uimenu');
+% end
+position = get(positionMenu, 'Position') + 1;
 
-% Add 'Validate files' to 'File'
-dirMenu = uimenu(parentMenu, 'Label', 'Validate files', ...
-    'Position', position, 'userdata', 'startup:on;study:on');
+%% Adding HEDTools submenu items to 'File'. Order of insertion in script is opposite to order of appearance in 'File' menu
+%% Add validation submenu to 'Edit'            
+callbackCmd = [trystrs.no_check ...
+                'if exist(''STUDY'',''var'') && exist(''CURRENTSTUDY'',''var'') && length(EEG) > 1 && CURRENTSTUDY == 1, ' ...
+                    '[~, LASTCOM] = pop_validatestudy(STUDY, ALLEEG);' ...
+                'else ' ...
+                    '[~, LASTCOM] = pop_validateeeg(EEG);' ...
+                'end;' ...
+                catchstrs.add_to_hist];
+            
+uimenu(parentMenu, 'Label', 'Validate event HED tags', ...
+    'Separator', 'off', 'Position', position, 'userdata', 'startup:off;study:on', 'Callback', callbackCmd);
 
-% Processing for 'Tag directory'
-finalcmd = '[~, LASTCOM] = pop_validatedir();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
 
-% Add 'Validate directory' to 'Tag files' 
-uimenu(dirMenu, 'Label', 'Validate directory', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag EEG study'
-finalcmd = '[~, LASTCOM] = pop_validatestudy();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Validate EEG study' to 'Tag files'  
-uimenu(dirMenu, 'Label', 'Validate study', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
-
-% Add 'Tag files' to 'File'
-dirMenu = uimenu(parentMenu, 'Label', 'Tag files', ...
-    'Separator', 'on', 'Position', position, 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag directory'
-finalcmd = '[~, ~, LASTCOM] = pop_tagdir();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Tag directory' to 'Tag files' 
-uimenu(dirMenu, 'Label', 'Tag directory', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
-
-% Processing for 'Tag EEG study'
-finalcmd = '[~, ~, LASTCOM] = pop_tagstudy();';
-finalcmd =  [trystrs.no_check finalcmd catchstrs.add_to_hist];
-
-% Add 'Tag EEG study' to 'Tag files'  
-uimenu(dirMenu, 'Label', 'Tag study', 'Callback', finalcmd, ...
-    'Separator', 'on', 'userdata', 'startup:on;study:on');
-
+%% Add Tagging submenu to 'Edit'
+callbackCmd = [trystrs.no_check ...
+                'if exist(''STUDY'',''var'') && exist(''CURRENTSTUDY'',''var'') && length(EEG) > 1 && CURRENTSTUDY == 1, ' ...
+                    '[STUDY, ALLEEG, fMap, LASTCOM] = pop_tagstudy(STUDY, ALLEEG);' ...
+                'else ' ...
+                    '[EEG, fMap, LASTCOM] = pop_tageeg(EEG);' ...
+                    'if ~isempty(LASTCOM) && ~isempty(EEG.event),' ...
+                        '[ALLEEG EEG CURRENTSET] = pop_newset(ALLEEG, EEG, CURRENTSET);' ...
+                        'eeglab redraw;' ...
+                    'end;' ...
+                'end;' ...
+                catchstrs.add_to_hist];
+uimenu(parentMenu, 'Label', 'Add/Edit event HED tags', ...
+    'Separator', 'off', 'Position', position, 'userdata', 'startup:off;study:on', 'Callback', callbackCmd);
 
 % Find 'Remove baseline' in the figure 
 parentMenu = findobj(fig, 'Label', 'Tools');
-positionMenu = findobj(fig, 'Label', 'Remove baseline', ...
-    'Type', 'uimenu');
+positionMenu = findobj(fig, 'Label', 'Remove epoch baseline', 'Type', 'uimenu');
+if isempty(positionMenu)
+    positionMenu = findobj(fig, 'Label', 'Remove baseline', 'Type', 'uimenu');
+end
 position = get(positionMenu, 'Position');
 
 % Processing for 'Extract epochs by tags'

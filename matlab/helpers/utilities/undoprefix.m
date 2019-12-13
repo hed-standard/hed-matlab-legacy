@@ -44,7 +44,7 @@ for k = 1:length(tags) - 1
         continue;
     end
     if ~all(cellfun('isempty',(regexp(tags{k+1}, ['^' tags{k}], 'match'))))
-	tags{k} = [];
+        tags{k} = [];
     end
 end
 tags = tags(~cellfun('isempty',tags));

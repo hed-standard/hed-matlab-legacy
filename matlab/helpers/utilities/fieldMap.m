@@ -247,6 +247,10 @@ classdef fieldMap < hgsetget
             xmlEdited = obj.XmlEdited;
         end % getXmlEdited
         
+        function result = isField(obj, field)
+            result = ~isempty(field) && obj.GroupMap.isKey(field);
+        end
+        
         function merge(obj, fMap, updateType, excludeFields, includeFields)
             % Combine another fieldMap with this object based on update
             % type

@@ -150,27 +150,23 @@ if nargin < 1
     EEG = '';
     help pop_tageeg;
     return;
-end;
+end
 
 p = parseArguments(EEG, varargin{:});
 
 % Call function with menu
 if p.UseGui
-  
     % Get the menu input parameters
-    menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
-        'HedExtensionsAnywhere', 'HedXml', 'PreserveTagPrefixes', ...
+    menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', 'HedXml', 'PreserveTagPrefixes', ...
         'SelectEventFields', 'UseCTagger'}, varargin{:});
     [canceled, baseMap, hedExtensionsAllowed, ...
-        hedExtensionsAnywhere, hedXml, preserveTagPrefixes, ...
-        selectEventFields, useCTagger] = ...
-        pop_tageeg_input(menuInputArgs{:});
+        hedXml, preserveTagPrefixes, ...
+        selectEventFields, useCTagger] = pop_tageeg_input(menuInputArgs{:});
     menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
-        hedExtensionsAllowed, 'HedExtensionsAnywhere', ...
-        hedExtensionsAnywhere, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
+        hedExtensionsAllowed, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
         preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
         'UseCTagger', useCTagger};
-    
+
     if canceled
         return;
     end
@@ -181,7 +177,7 @@ if p.UseGui
     
     canceled = false;
     
-    % Merge base map
+    % Extract fMap and (if an fMap is provided) merge base map
     [~, fMap] = tageeg(EEG, tageegInputArgs{:});
     
     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
@@ -189,24 +185,20 @@ if p.UseGui
     selectEventFields = taggerMenuArgs{2};
     useCTagger = taggerMenuArgs{4};
     
-    % Select fields to tag
-    ignoredEventFields = {};
-    if useCTagger && selectEventFields
-        selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
-            varargin{:});
-        [canceled, ignoredEventFields] = selectmaps(fMap, ...
-            selectmapsInputArgs{:});
-    else
-        fMap.setPrimaryMap(p.PrimaryEventField);
-    end
-    selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
-    
-    % Use CTagger
-    if useCTagger && ~canceled
-        editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', ...
-            'HedExtensionsAnywhere', 'PreserveTagPrefixes'}, ...
-            menuOutputArgs{:}) selectmapsOutputArgs];
-        [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+    % if use Ctagger
+    if useCTagger
+        ignoredEventFields = {};
+        % if select fields to tag
+        if selectEventFields
+            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
+            [fMap, canceled] = selectFieldAndTag(fMap, args);
+        else
+            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
+            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
+                menuOutputArgs{:}) selectmapsOutputArgs];
+            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        end
     end
     
     if canceled
@@ -238,6 +230,7 @@ if p.UseGui
     savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
         'FMapSaveFile', fMapSaveFile};
     
+    % Write tags to EEG
     writeTagsInputArgs = getkeyvalue({'PreserveTagPrefixes'}, ...
         menuOutputArgs{:});
     EEG = writetags(EEG, fMap, writeTagsInputArgs{:});
@@ -255,6 +248,8 @@ end
 com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
 
+%%% Helper functions
+    %% Parse arguments
     function p = parseArguments(EEG, varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
@@ -269,9 +264,8 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
         parser.addParamValue('FMapSaveFile', '', @(x)(isempty(x) || ...
             (ischar(x))));
         parser.addParamValue('HedExtensionsAllowed', true, @islogical);
-        parser.addParamValue('HedExtensionsAnywhere', false, @islogical);
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
-        parser.addParamValue('OverwriteUserHed', '', @islogical);
+        parser.addParamValue('OverwriteUserHed', false, @islogical);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.addParamValue('PrimaryEventField', 'type', @(x) ...
             (isempty(x) || ischar(x)))
@@ -285,5 +279,5 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
         parser.parse(EEG, varargin{:});
         p = parser.Results;
     end % parseArguments
-
+    
 end % pop_tageeg

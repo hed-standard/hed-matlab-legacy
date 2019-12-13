@@ -24,13 +24,6 @@
 %                    false, the HED can not be extended. The 
 %                    'ExtensionAnywhere argument determines where the HED
 %                    can be extended if extension are allowed.
-%                  
-%   'HedExtensionsAnywhere'
-%                    If true, the HED can be extended underneath all tags.
-%                    If false (default), the HED can only be extended where
-%                    allowed. These are tags with the 'extensionAllowed'
-%                    attribute or leaf tags (tags that do not have
-%                    children).
 %
 %   'PreserveTagPrefixes'
 %                    If false (default), tags of the same event type that
@@ -146,7 +139,7 @@ canceled = p.canceled;
         p.tValues = strtrim(char(p.tMap.getJsonValues()));
         p.xml = p.fMap.getXml();
         p.flags = setCTaggerFlags(p);
-        p.eTitle = ['Tagging ' p.field ' values'];
+        p.eTitle = 'Specifying HED tags for events - CTAGGER'; %['Tagging ' p.field ' values'];
     end % getCTaggerParameters
 
     function flags = setCTaggerFlags(p)
@@ -157,9 +150,6 @@ canceled = p.canceled;
         end
         if p.HedExtensionsAllowed
             flags = bitor(flags,4);
-        end
-        if p.HedExtensionsAnywhere
-            flags = bitor(flags,8);
         end
         if p.standAlone
             flags = bitor(flags,16);
@@ -189,7 +179,7 @@ canceled = p.canceled;
             p.fMap.setXml(p.xml);
         end
     end % updatefMap
-
+    
     function p = parseArguments(fMap, varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
@@ -197,7 +187,6 @@ canceled = p.canceled;
             'fieldMap')));
         parser.addParamValue('EventFieldsToIgnore', {}, @iscellstr);
         parser.addParamValue('HedExtensionsAllowed', true, @islogical);
-        parser.addParamValue('HedExtensionsAnywhere', false, @islogical);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.parse(fMap, varargin{:});
         p = parser.Results;

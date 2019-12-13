@@ -168,13 +168,12 @@ if p.UseGui
         'PreserveTagPrefixes', 'SelectEventFields', 'UseCTagger'}, ...
         varargin{:});
     [canceled, baseMap, doSubDirs, hedExtensionsAllowed, ...
-        hedExtensionsAnywhere, hedXml, inDir, preserveTagPrefixes, ...
+        hedXml, inDir, preserveTagPrefixes, ...
         selectEventFields, useCTagger] = ...
         pop_tagdir_input(menuInputArgs{:});
     menuOutputArgs = {'BaseMap', baseMap, 'DoSubDirs', doSubDirs, ...
         'HedExtensionsAllowed', hedExtensionsAllowed, ...
-        'HedExtensionsAnywhere', hedExtensionsAnywhere, 'HedXml', ...
-        hedXml, 'InDir', inDir, 'PreserveTagPrefixes', ...
+        'HedXml', hedXml, 'InDir', inDir, 'PreserveTagPrefixes', ...
         preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
         'UseCTagger', useCTagger};
     if canceled
@@ -197,24 +196,21 @@ if p.UseGui
     selectEventFields = taggerMenuArgs{2};
     useCTagger = taggerMenuArgs{4};
     
-    % Select fields to tag
-    ignoredEventFields = {};
-    if useCTagger && selectEventFields
-        selectmapsInputArgs = getkeyvalue({'PrimaryEventField'}, ...
-            varargin{:});
-        [canceled, ignoredEventFields] = selectmaps(fMap, ...
-            selectmapsInputArgs{:});
-    else
-        fMap.setPrimaryMap(p.PrimaryEventField);
-    end
-    selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields};
-    
-    % Use CTagger
+
+    % Select field and add tags
     if useCTagger && ~canceled
-        editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', ...
-            'HedExtensionsAnywhere', 'PreserveTagPrefixes'}, ...
-            menuOutputArgs{:}) selectmapsOutputArgs];
-        [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        ignoredEventFields = {};
+        % if select fields to tag
+        if selectEventFields
+            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
+            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+        else
+            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
+            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
+                menuOutputArgs{:}) selectmapsOutputArgs];
+            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        end
     end
     
     if canceled
@@ -288,8 +284,7 @@ com = char(['pop_tagdir(' logical2str(p.UseGui) ...
         parser.addParamValue('FMapDescription', '', @ischar);
         parser.addParamValue('FMapSaveFile', '', @(x)(isempty(x) || ...
             (ischar(x))));
-        parser.addParamValue('HedExtensionsAllowed', true, @islogical);
-        parser.addParamValue('HedExtensionsAnywhere', false, @islogical);
+        parser.addParamValue('HedExtensionsAllowed', false, @islogical);
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
         parser.addParamValue('InDir', '', @(x) (~isempty(x) && ischar(x)));
         parser.addParamValue('OverwriteDatasets', false, @islogical);
