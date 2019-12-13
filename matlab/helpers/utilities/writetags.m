@@ -55,12 +55,7 @@ p = parseArguments(eData, fMap, varargin{:});
 tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % fields to write tags to
 
 if isfield(eData, 'event') && isstruct(eData.event)
-    if isfield(p, 'taggedCombinedFields') && isempty(p.taggedCombinedFields)
-        tFields = intersect(fieldnames(eData.event), tFields);
-    else
-        %error: for some reason tagging one combination makes fMap has all
-        %fields
-    end
+    tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % fields to write tags to
     eData = writeIndividualTags(eData, fMap, tFields, ...
         p.PreserveTagPrefixes);
 end
@@ -124,7 +119,6 @@ eData = writeSummaryTags(fMap, eData, tFields);
         parser.addRequired('fMap', @(x) (~isempty(x) && isa(x, ...
             'fieldMap')));
         parser.addParamValue('EventFieldsToIgnore', {}, @(x) (iscellstr(x)));
-        parser.addParamValue('taggedCombinedFields', {}, @(x) (iscellstr(x)));
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.parse(eData, fMap, varargin{:});
         p = parser.Results;

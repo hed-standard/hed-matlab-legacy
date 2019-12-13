@@ -1,10 +1,6 @@
 % Allows a user to tag a EEG structure. First all of the tag information
 % and potential fields are extracted from EEG.event, EEG.urevent, and
-% EEG.etc.tags structures. After existing event tags are extracted and
-% merged with an optional input fieldMap, the user is presented with a
-% GUI to accept or exclude potential fields from tagging. Then the user is
-% presented with the CTagger GUI to edit and tag. Finally, the tags are
-% rewritten to the EEG structure.
+% EEG.etc.tags structures.
 %
 % Usage:
 %

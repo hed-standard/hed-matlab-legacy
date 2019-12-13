@@ -1,7 +1,6 @@
-function [fMap, canceled, taggedCombinedFields] = selectFieldAndTag(initialfMap, varargin)
+function [fMap, canceled] = selectFieldAndTag(initialfMap, varargin)
 varargin = varargin{:};
 fMap = initialfMap;
-taggedCombinedFields = {};
 [~, primaryField] = getkeyvalue('PrimaryEventField',varargin{:});
 fields = fMap.getFields();
 
@@ -53,16 +52,13 @@ end
         % prepare input arguments
         selected = get(findobj('Tag', 'listboxCB'),'Value');
         mainOptions = get(findobj('Tag','listboxCB'),'string');
-        if numel(selected) == 1
-            args = {'EventFieldsToIgnore', setdiff(mainOptions,mainOptions{selected})};
-        else
-            args = {'CombinedFieldsToTag', join(mainOptions(selected),'+')};
-            taggedCombinedFields = [taggedCombinedFields{:}, join(mainOptions(selected),'+')];
-        end
+        args = {'EventFieldsToIgnore', setdiff(mainOptions,mainOptions{selected})};
         editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
                 varargin{:}) args];
+            
         % call CTAGGER
         [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
+        
         % finish tagging, return control to fieldSelectWindow
         set(findobj('Tag','listboxCB'),'Enable','on');
         set(findobj('Tag','TagBtn'),'Enable','on');

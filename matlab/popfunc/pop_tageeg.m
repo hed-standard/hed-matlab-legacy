@@ -166,7 +166,7 @@ if p.UseGui
         hedExtensionsAllowed, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
         preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
         'UseCTagger', useCTagger};
-    taggedCombinedFields = {};
+
     if canceled
         return;
     end
@@ -177,7 +177,7 @@ if p.UseGui
     
     canceled = false;
     
-    % Merge base map
+    % Extract fMap and (if an fMap is provided) merge base map
     [~, fMap] = tageeg(EEG, tageegInputArgs{:});
     
     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
@@ -186,7 +186,7 @@ if p.UseGui
     useCTagger = taggerMenuArgs{4};
     
     % if use Ctagger
-    if useCTagger && ~canceled
+    if useCTagger
         ignoredEventFields = {};
         % if select fields to tag
         if selectEventFields
@@ -233,7 +233,7 @@ if p.UseGui
     % Write tags to EEG
     writeTagsInputArgs = getkeyvalue({'PreserveTagPrefixes'}, ...
         menuOutputArgs{:});
-    EEG = writetags(EEG, fMap, writeTagsInputArgs{:}, 'taggedCombinedFields',taggedCombinedFields);
+    EEG = writetags(EEG, fMap, writeTagsInputArgs{:});
     
     inputArgs = [inputArgs savefmapOutputArgs];
 end
