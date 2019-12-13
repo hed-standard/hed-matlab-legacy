@@ -2,8 +2,8 @@
 %
 % Input:
 %
-%   study
-%                    A EEG study structure.
+%   STUDY
+%                    An EEGLAB STUDY structure.
 %
 %   sPath
 %                    The path to a EEG study.
@@ -32,15 +32,15 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-function fPaths = getstudyfiles(study, sPath)
-datasets = {study.datasetinfo.filename};
-paths = {study.datasetinfo.filepath};
+function fPaths = getstudyfiles(STUDY, sPath)
+datasets = {STUDY.datasetinfo.filename};
+paths = {STUDY.datasetinfo.filepath};
 validPaths = true(size(paths));
 fPaths = cell(size(paths));
 for ik = 1:length(paths)
     fPath = fullfile(paths{ik}, datasets{ik}); % Absolute path
     if ~exist(fPath, 'file')  % Relative to stored study path
-        fPath = fullfile(study.filepath, paths{ik}, datasets{ik});
+        fPath = fullfile(STUDY.filepath, paths{ik}, datasets{ik});
     end
     if ~exist(fPath, 'file') && exist('sPath','var') % Relative to actual study path
         fPath = fullfile(sPath, paths{ik}, datasets{ik});

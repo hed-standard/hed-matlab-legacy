@@ -265,7 +265,7 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
             (ischar(x))));
         parser.addParamValue('HedExtensionsAllowed', true, @islogical);
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
-        parser.addParamValue('OverwriteUserHed', '', @islogical);
+        parser.addParamValue('OverwriteUserHed', false, @islogical);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.addParamValue('PrimaryEventField', 'type', @(x) ...
             (isempty(x) || ischar(x)))

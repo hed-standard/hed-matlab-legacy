@@ -1,20 +1,21 @@
 % Allows a user to create a fieldMap from a study file and its associated
 % EEG .set files. The events and tags from all data files are extracted and
 % consolidated into a single fieldMap object by merging all of the existing
-% tags.
+% tags. If an initial fMap is provided (baseMap), merge the baseMap with
+% the newly extracted fMap
 %
 % Usage:
 %
-%   >>  [fMap, fPaths] = tagstudy(EEG)
+%   >>  [fMap, fPaths] = tagstudy(ALLEEG)
 %
-%   >>  [fMap, fPaths] = tagstudy(EEG, 'key1', 'value1', ...)
+%   >>  [fMap, fPaths] = tagstudy(ALLEEG, 'key1', 'value1', ...)
 %
 % Input:
 %
 %   Required:
 %
-%   EEG
-%                    Structure array containing EEG datasets of a STUDY.
+%   ALLEEG
+%                    Structure array containing all EEG datasets of a STUDY.
 %
 %   Optional (key/value):
 %
@@ -52,9 +53,6 @@
 %                    A fieldMap object that contains the tag map
 %                    information
 %
-%   fPaths
-%                    A one-dimensional cell array of full file names of the
-%                    datasets to be tagged.
 %
 % Copyright (C) 2012-2016 Thomas Rognon tcrognon@gmail.com,
 % Jeremy Cockfield jeremy.cockfield@gmail.com, and
@@ -74,16 +72,16 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function fMap = getfMapFromSTUDY(EEG, varargin)
+function fMap = tagstudy(ALLEEG, varargin)
 
 p = parseArguments(varargin{:});
 
-fMap = findStudyTags(EEG, p);
+fMap = findStudyTags(ALLEEG, p);
 if ~isempty(p.BaseMap)
-    fMap = mergeBaseTags(p, fMap);
+    fMap = mergeBaseTags(fMap, p);
 end
  
-    function fMap = mergeBaseTags(p, fMap)
+    function fMap = mergeBaseTags(fMap, p)
         % Merge baseMap and fMap tags
         if isa(p.BaseMap, 'fieldMap')
             baseTags = p.BaseMap;
@@ -94,15 +92,14 @@ end
             p.EventFieldsToIgnore), {});
     end % mergeBaseTags
  
-    function [fMap, studyFields] = findStudyTags(EEG, p)
+    function [fMap, studyFields] = findStudyTags(ALLEEG, p)
         fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
         
         % Find the existing tags from the study datasets
         studyFields = {};
-        for k = 1:length(EEG) % Assemble the list
-            %eegTemp = pop_loadset(fPaths{k});
-            studyFields = union(studyFields, fieldnames(EEG(k).event));
-            fMapTemp = findtags(EEG(k), 'PreserveTagPrefixes', ...
+        for k = 1:length(ALLEEG) % Assemble the list
+            studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
+            fMapTemp = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
                 p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
                 p.EventFieldsToIgnore, 'HedXml', p.HedXml);
             fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
@@ -112,7 +109,6 @@ end
     function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
-        parser.addParamValue('StudyFile', '', @(x) (~isempty(x) && exist(x, 'file')));
         parser.addParamValue('BaseMap', '', @(x) isa(x, 'fieldMap') || ...
             ischar(x));
         parser.addParamValue('BaseMapFieldsToIgnore', {}, @iscellstr);

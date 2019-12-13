@@ -11,13 +11,13 @@
 %
 % Input:
 %
-%   Optional:
+%   Required:
 %
-%   UseGui
+
+%   Optional (key/value):
+%   'UseGui'
 %                    If true (default), use a series of menus to set
 %                    function arguments.
-%
-%   Optional (key/value):
 %
 %   'GenerateWarnings'
 %                   True to include warnings in the log file in addition
@@ -28,6 +28,12 @@
 %                   The full path to a HED XML file containing all of the
 %                   tags. This by default will be the HED.xml file
 %                   found in the hed directory.
+%   
+%   'WriteToOutputFile'
+%                   If true write an issue report for each of the EEG set
+%                   of the STUDY to 'outputFileDirectory'. If 'outputFileDirectory' is not
+%                   specified, issue report will be written to current
+%                   directory
 %
 %   'OutputFileDirectory'
 %                   The directory where the log files are written to.
@@ -35,13 +41,9 @@
 %                   dataset validated. The default directory will be the
 %                   current directory.
 %
-%   'StudyFile'
-%                   The full path to an EEG study file.
-%
 % Output:
 %
-%   fPaths           A list of full file names of the datasets to be
-%                    validated.
+%   issues         issues found in STUDY
 %
 %   com
 %                  String containing call to tagstudy with all parameters
@@ -63,49 +65,92 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 
-function [issues, com] = pop_validatestudy(EEG, varargin)
+function [issues, com] = pop_validatestudy(STUDY, ALLEEG, varargin)
 com = '';
 issues = '';
 
+if nargin < 2
+    help pop_validatestudy;
+    return;
+end
+if isempty(ALLEEG) || ~isstruct(ALLEEG)
+    warning('ALLEEG struct array is not specified... exiting function');
+    return;
+end
+
 p = parseArguments(varargin{:});
 
-% Call function with menu
+% Get input from user if calling function with menu
 if p.UseGui
-    menuInputArgs = getkeyvalue({'GenerateWarnings', 'HedXml', 'InDir', ...
-        'OutputFileDirectory', 'StudyFile'}, varargin{:});
+    menuInputArgs = getkeyvalue({'GenerateWarnings', 'HedXml', 'OutputFileDirectory'}, varargin{:});
     [canceled, generateWarnings, hedXML, outDir] = ...
         pop_validatestudy_input(menuInputArgs{:});
+    p.OutputFileDirectory = outDir;
+    p.HedXml = hedXML;
+    p.GenerateWarnings = generateWarnings;
     if canceled
         return;
     end
-    inputArgs = {'GenerateWarnings', generateWarnings, 'HedXml', ...
-        hedXML, 'OutputFileDirectory', outDir};
-    issues = validatestudy(EEG, inputArgs{:});
-    if isempty(issues)
-        fprintf('No issue found');
-    end
-    com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
-        keyvalue2str(varargin{:}) ');']);
+end
+
+inputArgs = {'GenerateWarnings', p.GenerateWarnings, 'HedXml', p.HedXML};
+issues = validatestudy(STUDY, ALLEEG, inputArgs{:});
+
+if isempty(issues)
+    fprintf('No issue found');
 else
-    % Call function without menu
-%     if isempty(p.StudyFile)
-%         warning('Study file is not specified... exiting function');
-%         return;
-%     end
-    if isempty(EEG) || ~isstruct(EEG)
-        warning('STUDY EEG struct array is not specified... exiting function');
-    end
-    if nargin > 1
-        inputArgs = getkeyvalue({'GenerateWarnings', ...
-            'HedXml', 'OutputFileDirectory'}, varargin{:});
-        issues = validatestudy(p.StudyFile, inputArgs{:});
-        if isempty(issues)
-            fprintf('No issue found');
-        end
-        com = char(['pop_validatestudy(EEG,' logical2str(p.UseGui) ', ' ...
-            keyvalue2str(varargin{2:end}) ');']);
+    if p.WriteToOutputFile
+        p.issues = issues;
+        writeOutputFiles(ALLEEG, p);
     end
 end
+
+    function writeOutputFiles(ALLEEG, p)
+        % Writes the issues and replace tags found to a log file and a
+        % replace file
+        p.dir = p.OutputFileDirectory;
+        for i=1:length(ALLEEG)
+            EEG = ALLEEG(i);
+            issue = p.issues(i);
+            if ~isempty(EEG.filename)
+                [~, p.file] = fileparts(EEG.filename);
+            else
+                [~, p.file] = fileparts(EEG.setname);
+            end
+            p.ext = '.txt';
+            try
+                if ~isempty(issue)
+                    createLogFile(p.dir, issue, p.file, p.ext, false);
+                else
+                    createLogFile(p.dir, issue, p.file, p.ext, true);
+                end
+            catch
+                throw(MException('validatestudy:cannotWrite', ...
+                    'Could not write log file'));
+            end
+        end 
+    end % writeOutputFiles
+
+    function createLogFile(dir, issue, file, ext, empty)
+        % Creates a log file containing any issues found through the
+        % validation
+        numErrors = length(issue);
+        errorFile = fullfile(dir, ['validated_' file ext]);
+        fileId = fopen(errorFile,'w');
+        if ~empty
+            fprintf(fileId, '%s', issue{1});
+            for a = 2:numErrors
+                fprintf(fileId, '\n%s', issue{a});
+            end
+        else
+            fprintf(fileId, 'No issues were found.');
+        end
+        fclose(fileId);
+    end % createLogFile
+    
+com = char(['pop_validatestudy(STUDY, ALLEEG,' logical2str(p.UseGui) ', ' ...
+    keyvalue2str(varargin{:}) ');']);
+
 
     function p = parseArguments(varargin)
         % Parses the arguements passed in and returns the results
@@ -115,7 +160,7 @@ end
             @(x) validateattributes(x, {'logical'}, {}));
         p.addParamValue('HedXml', which('HED.xml'), ...
             @(x) (~isempty(x) && ischar(x)));
-        p.addParamValue('StudyFile', '', @(x) (~isempty(x) && ischar(x)));
+        p.addParamValue('WriteToOutputFile', false, @islogical);
         p.addParamValue('OutputFileDirectory', pwd, ...
             @(x) ischar(x));
         p.parse(varargin{:});

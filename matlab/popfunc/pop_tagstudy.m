@@ -8,13 +8,16 @@
 %
 % Usage:
 %
-%   >>  [EEG, fMap, com] = pop_tagstudy(EEG, 'key1', value1 ...)
+%   >>  [STUDY, ALLEEG, fMap, com] = pop_tagstudy(STUDY, ALLEEG, 'key1', value1 ...)
 %
 % Input:
 %
 %   Required:
 %
-%   EEG
+%   STUDY
+%                    An EEGLAB STUDY structure
+%
+%   ALLEEG
 %                    Structure array containing info of all datasets of a STUDY 
 %
 %   Optional (key/value):
@@ -48,12 +51,6 @@
 %                    'ExtensionAnywhere argument determines where the HED
 %                    can be extended if extension are allowed.
 %
-%   'HEDExtensionsAnywhere'
-%                    If true, the HED can be extended underneath all tags.
-%                    If false (default), the HED can only be extended where
-%                    allowed. These are tags with the 'extensionAllowed'
-%                    attribute or leaf tags (tags that do not have
-%                    children).
 %
 %   'HedXML'
 %                    Full path to a HED XML file. The default is the
@@ -105,7 +102,9 @@
 %
 % Output:
 %
-%   EEG
+%   STUDY
+%                    
+%   ALLEEG
 %                    Structure array containing all datasets of the STUDY
 %                    with HED tags
 %
@@ -137,7 +136,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function [EEG, fMap, com] = pop_tagstudy(EEG, varargin)
+function [STUDY, ALLEEG, fMap, com] = pop_tagstudy(STUDY, ALLEEG, varargin)
 
 if nargin < 1
     help pop_tagstudy;
@@ -145,9 +144,7 @@ if nargin < 1
 end
 
 fMap = '';
-% fPaths = '';
 com = '';
-
 p = parseArguments(varargin{:});
  
 % Call function with menu
@@ -172,13 +169,14 @@ if p.UseGui
     end
     
     ignoreEventFields =  getkeyvalue({'EventFieldsToIgnore'}, varargin{:});
-    getfMapInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
+    tagstudyInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
         'PreserveTagPrefixes'}, menuOutputArgs{:}) ignoreEventFields];
     
     canceled = false;
     
-    % Merge base map
-    fMap = getfMapFromSTUDY(EEG, getfMapInputArgs{:});
+    % Create fMap from EEG.event of each EEG set in ALLEEG.
+    % If a base map is provided, merge it with the fMap
+    fMap = tagstudy(ALLEEG, tagstudyInputArgs{:});
     
     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
         menuOutputArgs{:});
@@ -186,17 +184,15 @@ if p.UseGui
     useCTagger = taggerMenuArgs{4};
  
     % if use Ctagger
-    if useCTagger && ~canceled
-        ignoredEventFields = {};
+    if useCTagger
         % if select fields to tag
         if selectEventFields
             args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
+            [fMap, canceled] = selectFieldAndTag(fMap, args);
         else
             fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
-            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
             editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
-                menuOutputArgs{:}) selectmapsOutputArgs];
+                menuOutputArgs{:}) {'EventFieldsToIgnore', {}}]; % ignore no fields
             [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
         end
     end
@@ -208,8 +204,8 @@ if p.UseGui
     fprintf('Tagging complete\n');
     
     fprintf('Saving tags... ');
-    for k = 1:length(EEG)
-	    EEG(k) = writetags(EEG(k), fMap, 'PreserveTagPrefixes', ...
+    for k = 1:length(ALLEEG)
+	    ALLEEG(k) = writetags(ALLEEG(k), fMap, 'PreserveTagPrefixes', ...
            p.PreserveTagPrefixes);
     end
     fprintf('Done.\n');
@@ -246,8 +242,8 @@ if p.UseGui
     end
     saveheddatasetsOutputArgs = {'OverwriteDatasets', overwriteDatasets};
     if overwriteDatasets
-        for i=1:length(EEG)
-           pop_saveset(EEG(i), 'filename', EEG(i).filename, 'filepath', EEG(k).filepath);
+        for i=1:length(ALLEEG)
+           pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(k).filepath); 
         end
     end
     
@@ -260,13 +256,13 @@ if nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});
-    fMap = getfMapFromSTUDY(EEG, inputArgs{:});
+    fMap = tagstudy(ALLEEG, inputArgs{:});
 end
  
 com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
  
-% STUDY take precedence over studyfile
+
     function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
