@@ -100,12 +100,12 @@ end
 
     function matchFound = findMatch(tags)
         % Looks for a match, first at the top-level and then in the groups
-        if topLevelMatchFound(tags)
-            matchFound = true;
-        elseif noAttributeOrExclusiveTagsFound(tags)
-            matchFound = matchFoundAnywhere(tags);
-        elseif ~isempty(tags.groupTags)
-            matchFound = findMatchInGroup(tags);
+        if topLevelMatchFound(tags) % if an exclusive tag appears in both top-level AND query string tags AND exactly or partially match tag in top-level
+            matchFound = true; % TRUE immediately regardless of other tags in the query string
+        elseif noAttributeOrExclusiveTagsFound(tags) % if there's no attribute tag nor exclusive tag in the query string
+            matchFound = matchFoundAnywhere(tags); % any match (either at group or top-level) counts
+        elseif ~isempty(tags.groupTags) % if there's group tags
+            matchFound = findMatchInGroup(tags); % match happens when there's full match group or all groups has that tag
         else
             matchFound = false;
         end

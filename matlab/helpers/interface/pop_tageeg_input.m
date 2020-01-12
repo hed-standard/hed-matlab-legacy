@@ -137,7 +137,7 @@ end
             tagsFile = fullfile(path, file);
             if ischar(file) && ~isempty(file) && validateBaseTags(tagsFile)
                 baseMap = tagsFile;
-                set(findobj('Tag', 'BaseTags'), 'String', baseMap);
+                set(findobj('Tag', 'fMapPath'), 'String', baseMap);
             end
         end
     end % browseBaseTagsCallback
@@ -148,7 +148,7 @@ end
             myTitle);
         if tFile ~= 0
             hedXml = fullfile(tPath, tFile);
-            set(findobj('Tag', 'HEDXMLEB'), 'String', hedXml);
+            set(findobj('Tag', 'HEDpath'), 'String', hedXml);
         end
     end % browseHedXMLCallback
 

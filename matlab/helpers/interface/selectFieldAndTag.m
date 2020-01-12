@@ -1,6 +1,7 @@
 function [fMap, canceled] = selectFieldAndTag(initialfMap, varargin)
 varargin = varargin{:};
 fMap = initialfMap;
+canceled = false;
 [~, primaryField] = getkeyvalue('PrimaryEventField',varargin{:});
 fields = fMap.getFields();
 
