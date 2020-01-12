@@ -75,15 +75,15 @@ orOperator = '||';
 if ischar(hedStrings)
     hedStrings = {hedStrings};
 end
-[uniuqeHedStrings, ~, ids] = unique(hedStrings);
+[uniqueHedStrings, ~, ids] = unique(hedStrings);
 matchMask = false(length(hedStrings), 1);
-for i = 1:length(uniuqeHedStrings)
-    if strcmp(strtrim(uniuqeHedStrings{i}), strtrim(queryString))
-        matchMask(ids == i) = true;
+for i = 1:length(uniqueHedStrings)
+    if strcmp(strtrim(uniqueHedStrings{i}), strtrim(queryString))
+        matchMask(ids == i) = true; % length(ids) == length(hedStrings). ids <-- index(uniqueHedStrings)
         break;
     end
     if isempty(strfind(lower(queryString), orOperator))
-        matchMask(ids == i) =  findhedevents(uniuqeHedStrings{i}, ...
+        matchMask(ids == i) =  findhedevents(uniqueHedStrings{i}, ...
             queryString, exlcusiveTagsArgument, ...
             inputArguments.exclusiveTags);
     else
@@ -91,7 +91,7 @@ for i = 1:length(uniuqeHedStrings)
         matchMask(ids == i) = false;
         for j=1:length(queryParts)
             matchMask(ids == i) = matchMask(ids == i) | ...
-                findhedevents(uniuqeHedStrings{i}, queryParts{j}, ...
+                findhedevents(uniqueHedStrings{i}, queryParts{j}, ...
                 exlcusiveTagsArgument, inputArguments.exclusiveTags);
         end
     end
