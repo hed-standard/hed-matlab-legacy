@@ -446,11 +446,12 @@ classdef tagList < hgsetget
             elseif ischar(telement)
                 tstring = strtrim(telement);
             elseif iscellstr(telement)
-                tstring = strtrim(telement{1});
+                tstring = ['(' strtrim(telement{1})];
                 for k = 2:length(telement)
                     tstring = [tstring ',' ...
                         strtrim(telement{k})]; %#ok<AGROW>
                 end
+                tstring = [tstring ')'];
             else
                 errormsg = 'element is not string or cellstr';
             end
