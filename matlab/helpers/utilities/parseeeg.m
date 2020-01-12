@@ -58,7 +58,7 @@
 
 function issues = parseeeg(hedXml, events, generateWarnings)
 p = parseArguments(hedXml, events, generateWarnings);
-issues = validateEventsTags(p);
+issues = readStructTags(p);
 
     function p = parseArguments(hedXml, events, generateWarnings)
         % Parses the arguements passed in and returns the results
@@ -70,26 +70,37 @@ issues = validateEventsTags(p);
         p = parser.Results;
     end % parseArguments
 
-    function issues = validateEventsTags(p)
-        % Extract the HED tags from the EEG event structure array and validate them
+    function issues = readStructTags(p)
+        % Extract the HED tags in a structure array and validate them
         p.issues = {};
         p.replaceTags = {};
         p.issueCount = 1;
         numberEvents = length(p.events);
-        hedStrings = cell(1,numberEvents);
         try
             for a = 1:numberEvents
-                hedStrings{a} = concattags(p.events(a));             
+                p.structNumber = a;
+                p.hedString = concattags(p.events(a));
+                if ~isempty(p.hedString)
+                    p = validateStructTags(p);
+                end
             end
-            issues = validateHedStrings(p.hedXml,hedStrings,p.generateWarnings);
-        catch ME
-            if ME.identifier == "validateHedString:serverError"
-                throw(ME);
-            else
-                throw(MException('parseeeg:cannotRead', ...
+            issues = p.issues;
+        catch
+            throw(MException('parseeeg:cannotRead', ...
                 'Unable to read event %d', a));
-            end
         end
     end % readStructTags
+
+    function p = validateStructTags(p)
+        % Validates the HED tags in a structure
+        p.structIssues = validateHedTags(p.hedString, ...
+            'hedXml', p.hedXml, 'generateWarnings', p.generateWarnings);
+        if ~isempty(p.structIssues)
+            p.issues{p.issueCount} = ...
+                [sprintf('Issues in event %d:\n', p.structNumber), ...
+                p.structIssues];
+            p.issueCount = p.issueCount + 1;
+        end
+    end % validateStructTags
 
 end % parseeeg
