@@ -28,9 +28,6 @@
 %                By default, this argument is set to
 %                {'Attribute/Intended effect', 'Attribute/Offset',
 %                'Attribute/Participant indication'}.
-%                DT interpretation: if any of these tags is presented in
-%                both query and HED string then it's an automatic match
-%                TODO: how does exclusive tag affect group tags matching?
 %
 % Output:
 %
@@ -103,8 +100,8 @@ end
 
     function matchFound = findMatch(tags)
         % Looks for a match, first at the top-level and then in the groups
-        if topLevelMatchFound(tags) % if an exclusive tag appears in both top-level AND query string tags AND exactly or partially match tag in top-level
-            matchFound = true; % TRUE immediately regardless of other tags in the query string
+        if topLevelMatchFound(tags) 
+            matchFound = true; 
         elseif noAttributeOrExclusiveTagsFound(tags) % if there's no attribute tag nor exclusive tag in the query string
             matchFound = matchFoundAnywhere(tags); % any match (either at group or top-level) counts
         elseif ~isempty(tags.groupTags) % if there's group tags
@@ -188,8 +185,6 @@ end
 
     function found = anyFoundInAndB(a, b, c)
         % Checks to see if any c elements found in a are also found in b
-        % DT: meaning checking if any element in c exists in both a and b?
-        % found = true; why true by default? c might not even exist in a
         found = false;
         cElementsFoundInA = c(ismember(c, a));
         if ~isempty(cElementsFoundInA)
@@ -257,8 +252,6 @@ end
     function matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags)
         % Returns true if all exclusive tags found at the top-level are also
         % found in the query tags
-        % DT interpretation: returns true if any of the exclusive tags is
-        % presented in both top-level and query tags
         matchFound = anyFoundInAndB(tags.topLevelTags, tags.queryTags, ...
             tags.exclusiveTags);
     end % topLevelExclusiveTagsFoundInQuery
