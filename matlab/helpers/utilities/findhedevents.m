@@ -28,6 +28,9 @@
 %                By default, this argument is set to
 %                {'Attribute/Intended effect', 'Attribute/Offset',
 %                'Attribute/Participant indication'}.
+%                DT interpretation: if any of these tags is presented in
+%                both query and HED string then it's an automatic match
+%                TODO: how does exclusive tag affect group tags matching?
 %
 % Output:
 %
@@ -185,7 +188,9 @@ end
 
     function found = anyFoundInAndB(a, b, c)
         % Checks to see if any c elements found in a are also found in b
-        found = true;
+        % DT: meaning checking if any element in c exists in both a and b?
+        % found = true; why true by default? c might not even exist in a
+        found = false;
         cElementsFoundInA = c(ismember(c, a));
         if ~isempty(cElementsFoundInA)
             found = any(ismember(cElementsFoundInA, b));
@@ -235,8 +240,11 @@ end
     function matchFound = topLevelMatchFound(tags)
         % Returns true if a match was found in top-level tags of the HED
         % string
-        matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && ...
-            topLevelExactOrPrefixMatchFound(tags);
+        if any(ismember(tags.exclusiveTags,tags.topLevelTags))
+            matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && topLevelExactOrPrefixMatchFound(tags);
+        else
+            matchFound = topLevelExactOrPrefixMatchFound(tags);
+        end
     end % topLevelMatchFound
 
     function matchFound = topLevelExactOrPrefixMatchFound(tags)
@@ -249,6 +257,8 @@ end
     function matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags)
         % Returns true if all exclusive tags found at the top-level are also
         % found in the query tags
+        % DT interpretation: returns true if any of the exclusive tags is
+        % presented in both top-level and query tags
         matchFound = anyFoundInAndB(tags.topLevelTags, tags.queryTags, ...
             tags.exclusiveTags);
     end % topLevelExclusiveTagsFoundInQuery

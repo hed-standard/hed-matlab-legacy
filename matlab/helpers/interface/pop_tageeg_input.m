@@ -142,10 +142,10 @@ end
         end
     end % browseBaseTagsCallback
 
-    function browseHEDFileCallBack(src, eventdata, myTitle) %#ok<INUSL>
+    function browseHEDFileCallBack(~, ~)
         % Callback for 'Browse' button that sets the 'HED' editbox
         [tFile, tPath] = uigetfile({'*.xml', 'XML files (*.xml)'}, ...
-            myTitle);
+            'Browse HED schema file');
         if tFile ~= 0
             hedXml = fullfile(tPath, tFile);
             set(findobj('Tag', 'HEDpath'), 'String', hedXml);

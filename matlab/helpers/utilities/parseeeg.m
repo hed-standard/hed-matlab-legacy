@@ -76,18 +76,19 @@ issues = readStructTags(p);
         p.replaceTags = {};
         p.issueCount = 1;
         numberEvents = length(p.events);
+        hedStrings = cell(1,numberEvents);
         try
             for a = 1:numberEvents
-                p.structNumber = a;
-                p.hedString = concattags(p.events(a));
-                if ~isempty(p.hedString)
-                    p = validateStructTags(p);
-                end
+                hedStrings{a} = concattags(p.events(a));             
             end
-            issues = p.issues;
-        catch
-            throw(MException('parseeeg:cannotRead', ...
+            issues = validateHedStrings(p.hedXml,hedStrings,p.generateWarnings);
+        catch ME
+            if ME.identifier == "validateHedString:serverError"
+                throw(ME);
+            else
+                throw(MException('parseeeg:cannotRead', ...
                 'Unable to read event %d', a));
+            end
         end
     end % readStructTags
 
