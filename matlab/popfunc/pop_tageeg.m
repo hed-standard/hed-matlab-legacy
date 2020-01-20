@@ -144,7 +144,7 @@
 function [EEG, fMap, com] = pop_tageeg(EEG, varargin)
 fMap = '';
 com = '';
-
+canceled = false;
 % Display help if inappropriate number of arguments
 if nargin < 1
     EEG = '';
@@ -156,6 +156,8 @@ p = parseArguments(EEG, varargin{:});
 
 % Call function with menu
 if p.UseGui
+    isAlreadyTagged = isfield(EEG, 'usertags') || isfield(EEG, 'hedtags'); % check if there exist tags in the dataset already
+    
     % Get the menu input parameters
     menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', 'HedXml', 'PreserveTagPrefixes', ...
         'SelectEventFields', 'UseCTagger'}, varargin{:});
@@ -223,19 +225,21 @@ if p.UseGui
     end
     
     % Save field map containing tags
-    savefmapInputArgs = getkeyvalue({'FMapDescription', ...
-        'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
-    [fMap, fMapDescription, fMapSaveFile] = ...
-        pop_savefmap(fMap, savefmapInputArgs{:});
-    savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
-        'FMapSaveFile', fMapSaveFile};
+    % fMap changed only when use CTAGGER or there's a merge with existing tags
+    if useCTagger || (~useCTagger && isAlreadyTagged)
+        savefmapInputArgs = getkeyvalue({'FMapDescription', ...
+            'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
+        [fMap, fMapDescription, fMapSaveFile] = ...
+            pop_savefmap(fMap, savefmapInputArgs{:});
+        savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
+            'FMapSaveFile', fMapSaveFile};
+        inputArgs = [inputArgs savefmapOutputArgs];
+    end
     
     % Write tags to EEG
     writeTagsInputArgs = getkeyvalue({'PreserveTagPrefixes'}, ...
         menuOutputArgs{:});
-    EEG = writetags(EEG, fMap, writeTagsInputArgs{:});
-    
-    inputArgs = [inputArgs savefmapOutputArgs];
+    EEG = writetags(EEG, fMap, writeTagsInputArgs{:}); 
 end
 
 % Call function without menu

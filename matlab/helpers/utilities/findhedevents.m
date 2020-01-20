@@ -30,6 +30,7 @@
 %                'Attribute/Participant indication'}.
 %                DT interpretation: if any of these tags is presented in
 %                both query and HED string then it's an automatic match
+%                TODO: how does exclusive tag affect group tags matching?
 %
 % Output:
 %
@@ -239,8 +240,11 @@ end
     function matchFound = topLevelMatchFound(tags)
         % Returns true if a match was found in top-level tags of the HED
         % string
-        matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && ...
-            topLevelExactOrPrefixMatchFound(tags);
+        if any(ismember(tags.exclusiveTags,tags.topLevelTags))
+            matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && topLevelExactOrPrefixMatchFound(tags);
+        else
+            matchFound = topLevelExactOrPrefixMatchFound(tags);
+        end
     end % topLevelMatchFound
 
     function matchFound = topLevelExactOrPrefixMatchFound(tags)
