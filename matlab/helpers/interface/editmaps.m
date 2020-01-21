@@ -139,7 +139,7 @@ canceled = p.canceled;
         p.tValues = strtrim(char(p.tMap.getJsonValues()));
         p.xml = p.fMap.getXml();
         p.flags = setCTaggerFlags(p);
-        p.eTitle = 'Specifying HED tags for events - CTAGGER'; %['Tagging ' p.field ' values'];
+        p.eTitle = ['TAGGING EEG.event.' p.field]; %['Tagging ' p.field ' values'];
     end % getCTaggerParameters
 
     function flags = setCTaggerFlags(p)
