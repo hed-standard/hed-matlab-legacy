@@ -100,8 +100,8 @@ end
 
     function matchFound = findMatch(tags)
         % Looks for a match, first at the top-level and then in the groups
-        if topLevelMatchFound(tags) % if an exclusive tag appears in both top-level AND query string tags AND exactly or partially match tag in top-level
-            matchFound = true; % TRUE immediately regardless of other tags in the query string
+        if topLevelMatchFound(tags) 
+            matchFound = true; 
         elseif noAttributeOrExclusiveTagsFound(tags) % if there's no attribute tag nor exclusive tag in the query string
             matchFound = matchFoundAnywhere(tags); % any match (either at group or top-level) counts
         elseif ~isempty(tags.groupTags) % if there's group tags
@@ -185,7 +185,7 @@ end
 
     function found = anyFoundInAndB(a, b, c)
         % Checks to see if any c elements found in a are also found in b
-        found = true;
+        found = false;
         cElementsFoundInA = c(ismember(c, a));
         if ~isempty(cElementsFoundInA)
             found = any(ismember(cElementsFoundInA, b));
@@ -235,8 +235,11 @@ end
     function matchFound = topLevelMatchFound(tags)
         % Returns true if a match was found in top-level tags of the HED
         % string
-        matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && ...
-            topLevelExactOrPrefixMatchFound(tags);
+        if any(ismember(tags.exclusiveTags,tags.topLevelTags))
+            matchFound = sameExclusiveTagsFoundInTopLevelAndQuery(tags) && topLevelExactOrPrefixMatchFound(tags);
+        else
+            matchFound = topLevelExactOrPrefixMatchFound(tags);
+        end
     end % topLevelMatchFound
 
     function matchFound = topLevelExactOrPrefixMatchFound(tags)
