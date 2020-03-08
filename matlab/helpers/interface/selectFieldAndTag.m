@@ -6,28 +6,29 @@ canceled = false;
 fields = fMap.getFields();
 
 %% Defining GUI elements
-geometry = {[0.5] ...
-            [0.5] ...
-            [0.5] ...
-            [0.3 0.5] ...
-            [0.5]};
+geometry = {[1] ...
+            [1] ...
+            [1] ...
+            [1] ... %             [0.3 0.5] ...
+            [1 1]};
 uilist = {...
     {'Style', 'text', 'string', 'Select a field then click "Tag"', 'FontWeight', 'bold'} ...
     {'Style', 'listbox', 'string', fields, 'tag', 'listboxCB', 'HorizontalAlignment','left'} ...
     {'Style', 'pushbutton', 'string', 'Tag', 'FontWeight','bold','tag', 'TagBtn', 'callback', @tagCallback} ...
-    {'Style', 'text', 'string', 'Primary field:','HorizontalAlignment','left'} ...
-    {'Style', 'popupmenu', 'string', fields, 'Value', find(strcmp(fields,primaryField)), 'tag', 'primaryFieldBox'} ...
-    {'Style', 'text', 'string', 'Click "Ok" to continue when finish tagging'}};
+    {'Style', 'text', 'string', 'Click "Done" when you have finished tagging'}...
+    {},...
+    { 'style', 'pushbutton' , 'string', 'Done', 'tag', 'ok', 'callback', 'close(gcbf)'}};
+%     {'Style', 'text', 'string', 'Primary field:','HorizontalAlignment','left'} ...
+%     {'Style', 'popupmenu', 'string', fields, 'Value', find(strcmp(fields,primaryField)), 'tag', 'primaryFieldBox'} ...
 
 %% Waiting for user input
-[tmp1, tmp2, strhalt, structout] = inputgui( 'geometry', geometry, 'geomvert',[1 8 1.3 1.5 1], 'uilist', uilist, ...
-           'helpcom', 'pophelp(''pop_tageeg'');', 'title', 'Select field to use for tagging -- pop_tageeg()');
-    
+[~,~, handles] = supergui( 'geomhoriz', geometry, 'geomvert',[1 8 1.3 1 1], 'uilist', uilist, 'title', 'Select field to use for tagging -- pop_tageeg()');
+waitfor(get(handles{1},'parent'));
 %% Set values accordingly 
-if isempty(structout) % if canceled
-    canceled = true;
-    fMap = initialfMap;
-end        
+% if isempty(structout) % if canceled
+%     canceled = true;
+%     fMap = initialfMap;
+% end        
 
      %% Callback for button "Tag"
     % Tag selected field. Can be repeated while select field window is
@@ -39,16 +40,16 @@ end
         set(findobj('tag','TagBtn'),'Enable','off');
         set(findobj('tag','cancel'),'Enable','off');
         set(findobj('tag','ok'),'Enable','off');
-        % set primary field
-        primaryFieldBox = findobj('tag', 'primaryFieldBox');
-        primaryFieldIdx = get(primaryFieldBox,'Value');
-        fieldsInBox = get(primaryFieldBox, 'String');
-        selectedField = fieldsInBox{primaryFieldIdx};
-        if (fMap.isField(selectedField)) 
-            fMap.setPrimaryMap(selectedField);
-        else
-            error("Error in pop_tageeg: selected primary field is not in fMap");
-        end
+%         % set primary field
+%         primaryFieldBox = findobj('tag', 'primaryFieldBox');
+%         primaryFieldIdx = get(primaryFieldBox,'Value');
+%         fieldsInBox = get(primaryFieldBox, 'String');
+%         selectedField = fieldsInBox{primaryFieldIdx};
+%         if (fMap.isField(selectedField)) 
+%             fMap.setPrimaryMap(selectedField);
+%         else
+%             error("Error in pop_tageeg: selected primary field is not in fMap");
+%         end
 %         p.PrimaryEventField = selectedField;
         % prepare input arguments
         selected = get(findobj('Tag', 'listboxCB'),'Value');
