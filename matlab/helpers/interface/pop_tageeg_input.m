@@ -34,10 +34,6 @@
 %                    is retained (e.g., /a/b/c and /a/b become just
 %                    /a/b/c). If true, then all unique tags are retained.
 %
-%   selectEventFields
-%                    If true (default), the user is presented with a
-%                    GUI that allow users to select which fields to tag.
-%
 %   useCTagger
 %                    If true (default), the CTAGGER GUI is displayed after
 %                    initialization.
@@ -61,22 +57,18 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 function [canceled, baseMap, hedExtensionsAllowed,...
-    hedXml, preserveTagPrefixes, ...
-    selectEventFields, useCTagger] = pop_tageeg_input(varargin)
+    hedXml, preserveTagPrefixes, useCTagger] = pop_tageeg_input(varargin)
 p = parseArguments(varargin{:});
 baseMap = p.BaseMap;
 canceled = true;
 hedExtensionsAllowed = p.HedExtensionsAllowed;
 hedXml = p.HedXml;
 preserveTagPrefixes = p.PreserveTagPrefixes;
-selectEventFields = p.SelectEventFields;
 useCTagger = p.UseCTagger;
 
 %% Defining GUI elements
 geometry = {[0.3 1 0.2] ...
             [0.3 1 0.2] ...
-            [0.3 1] ...
-            [0.3 1] ...
             [0.3 1]};
 uilist = {...
     {'Style', 'text', 'string', 'HED Schema'} ...
@@ -88,16 +80,7 @@ uilist = {...
     {'Style', 'text', 'string', ''},...        
     {'Style', 'checkbox', 'value', 1,...
         'string', 'Use CTagger to add/modify tags/schema',...
-        'TooltipString', 'If checked, use CTagger for each selected field', 'tag', 'UseCTAGGER', 'Callback', @useCTaggerCallback } ...
-    {'Style', 'text', 'string', ''},...        
-    {'Style', 'checkbox', 'value', 1,...
-        'string', 'Select EEG.event fields to use for tagging',...
-        'TooltipString', 'If checked, use menu to select fields to tag', 'tag', 'SelectField' } ...
-    {'Style', 'text', 'string', ''},...        
-    {'Style', 'checkbox', 'value', 0,...
-        'string', 'Allow extension to the HED schema where compatible',...
-        'TooltipString', 'If checked, allow extension of HED schema where compatible with the schema definition', 'tag', 'ExtensionAllowed' } ...        
-    };
+        'TooltipString', 'If checked, use CTagger for each selected field', 'tag', 'UseCTAGGER'}};
 %% Waiting for user input
 [~, ~, ~, structout] = inputgui( geometry, uilist, ...
            'pophelp(''pop_tageeg'');', 'Tag current dataset - pop_tageeg()');
@@ -107,12 +90,7 @@ if ~isempty(structout)  % if not canceled
     hedXml = structout.HEDpath;
     baseMap = structout.fMapPath;
     useCTagger = logical(structout.UseCTAGGER);
-    if useCTagger 
-        selectEventFields = logical(structout.SelectField);
-    else
-        selectEventFields = false ;
-    end
-    hedExtensionsAllowed = logical(structout.ExtensionAllowed);
+    hedExtensionsAllowed = true;
     canceled = false;
 end
 
@@ -152,15 +130,6 @@ end
         end
     end % browseHedXMLCallback
 
- 
-    function useCTaggerCallback(src, ~)
-        if get(src, 'value') == 0
-            set(findobj('Tag', 'SelectField'), 'Enable', 'off');
-        else
-            set(findobj('Tag', 'SelectField'), 'Enable', 'on');
-        end
-    end % useCTaggerCallback
-
     function hedEditBoxCallback(src, ~) 
         % Callback for user directly editing the HED XML editbox
         xml = get(src, 'String');
@@ -182,7 +151,6 @@ end
         parser.addParamValue('HedExtensionsAllowed', false, @islogical);
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
-        parser.addParamValue('SelectEventFields', true, @islogical);
         parser.addParamValue('UseCTagger', true, @islogical);
         parser.parse(varargin{:});
         p = parser.Results;

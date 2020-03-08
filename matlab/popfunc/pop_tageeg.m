@@ -59,13 +59,6 @@
 %                    'ExtensionAnywhere argument determines where the HED
 %                    can be extended if extension are allowed.
 %
-%   'HEDExtensionsAnywhere'
-%                    If true, the HED can be extended underneath all tags.
-%                    If false (default), the HED can only be extended where
-%                    allowed. These are tags with the 'ExtensionAllowed'
-%                    attribute or leaf tags (tags that do not have
-%                    children).
-%
 %   'HedXML'
 %                    Full path to a HED XML file. The default is the
 %                    HED.xml file in the hed directory.
@@ -88,10 +81,6 @@
 %                    the primary field. A primary field requires a label,
 %                    category, and a description tag. The default is the
 %                    .type field.
-%
-%   'SelectEventFields'
-%                    If true (default), the user is presented with a
-%                    GUI that allow users to select which fields to tag.
 %
 %   'SeparateUserHedFile'
 %                    The full path and file name to write the HED from the
@@ -156,18 +145,24 @@ p = parseArguments(EEG, varargin{:});
 
 % Call function with menu
 if p.UseGui
-    isAlreadyTagged = isfield(EEG, 'usertags') || isfield(EEG, 'hedtags'); % check if there exist tags in the dataset already
+    isAlreadyTagged = isfield(EEG.event, 'usertags') || isfield(EEG.event, 'hedtags'); % check if there exist tags in the dataset already
     
     % Get the menu input parameters
-    menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', 'HedXml', 'PreserveTagPrefixes', ...
-        'SelectEventFields', 'UseCTagger'}, varargin{:});
-    [canceled, baseMap, hedExtensionsAllowed, ...
-        hedXml, preserveTagPrefixes, ...
-        selectEventFields, useCTagger] = pop_tageeg_input(menuInputArgs{:});
+    if ~isAlreadyTagged
+        menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', 'HedXml', 'PreserveTagPrefixes', 'UseCTagger'}, varargin{:});
+        [canceled, baseMap, hedExtensionsAllowed, ...
+            hedXml, preserveTagPrefixes, useCTagger] = pop_tageeg_input(menuInputArgs{:});
+    else
+        canceled = false;
+        baseMap = '';
+        hedXml = which('HED.xml');
+        hedExtensionsAllowed = true;
+        useCTagger = true;
+        preserveTagPrefixes = false;
+    end
     menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
         hedExtensionsAllowed, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
-        preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
-        'UseCTagger', useCTagger};
+        preserveTagPrefixes, 'UseCTagger', useCTagger};
 
     if canceled
         return;
@@ -182,31 +177,44 @@ if p.UseGui
     % Extract fMap and (if an fMap is provided) merge base map
     [~, fMap] = tageeg(EEG, tageegInputArgs{:});
     
-    taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
-        menuOutputArgs{:});
-    selectEventFields = taggerMenuArgs{2};
-    useCTagger = taggerMenuArgs{4};
+%     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
+%         menuOutputArgs{:});
+%     selectEventFields = taggerMenuArgs{2};
+%     useCTagger = taggerMenuArgs{4};
     
     % if use Ctagger
     if useCTagger
-        ignoredEventFields = {};
-        % if select fields to tag
-        if selectEventFields
+        % set primary field to be EEG.event.type
+        fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+        
+        % tag EEG.event.type
+        fields = fMap.getFields();
+        args = {'EventFieldsToIgnore', setdiff(fields,'type')};
+        editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
+                menuOutputArgs{:}) args]; 
+        [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:}); % call CTAGGER
+
+        if canceled
+            fprintf('Tagging was canceled\n');
+            return;
+        end
+        % prompt for continue tagging using other fields
+        [~,~,handleObj]=supergui( 'geomhoriz', { 1 1 [1 1] }, 'uilist', { ...
+             { 'style', 'text', 'string', 'Do you want to add more tags using other EEG.event fields?' }, { }, ...
+             { 'style', 'pushbutton' , 'string', 'No', 'callback', @otherFieldsCBNo } ...
+             { 'style', 'pushbutton' , 'string', 'Yes', 'tag', 'ok', 'callback', {@otherFieldsCBYes} }} );
+        okbtn = handleObj{4};
+        waitfor(okbtn, 'UserData'); % ok button
+        useOtherFields = okbtn.UserData;
+        close(get(handleObj{1}, 'parent'));
+        if useOtherFields
+            % tag other fields
             args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
             [fMap, canceled] = selectFieldAndTag(fMap, args);
-        else
-            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
-            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
-            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
-                menuOutputArgs{:}) selectmapsOutputArgs];
-            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
         end
     end
     
-    if canceled
-        fprintf('Tagging was canceled\n');
-        return;
-    end
+
     fprintf('Tagging complete\n');
     
     inputArgs = [menuOutputArgs ignoreEventFields];
@@ -222,18 +230,6 @@ if p.UseGui
             'SeparateUserHedFile', separateUserHedFile, ...
             'WriteSeparateUserHedFile', writeSeparateUserHedFile};
         inputArgs = [inputArgs savehedOutputArgs];
-    end
-    
-    % Save field map containing tags
-    % fMap changed only when use CTAGGER or there's a merge with existing tags
-    if useCTagger || (~useCTagger && isAlreadyTagged)
-        savefmapInputArgs = getkeyvalue({'FMapDescription', ...
-            'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
-        [fMap, fMapDescription, fMapSaveFile] = ...
-            pop_savefmap(fMap, savefmapInputArgs{:});
-        savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
-            'FMapSaveFile', fMapSaveFile};
-        inputArgs = [inputArgs savefmapOutputArgs];
     end
     
     % Write tags to EEG
@@ -273,7 +269,6 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.addParamValue('PrimaryEventField', 'type', @(x) ...
             (isempty(x) || ischar(x)))
-        parser.addParamValue('SelectEventFields', true, @islogical);
         parser.addParamValue('SeparateUserHedFile', '', @(x) ...
             (isempty(x) || (ischar(x))));
         parser.addParamValue('UseCTagger', true, @islogical);
@@ -283,5 +278,12 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
         parser.parse(EEG, varargin{:});
         p = parser.Results;
     end % parseArguments
+    function otherFieldsCBNo(src,event,res)
+        okBtn = findobj('tag','ok');
+        okBtn.UserData = false;
+    end
+    function otherFieldsCBYes(src,event,res)
+        src.UserData = true;
+    end
     
 end % pop_tageeg

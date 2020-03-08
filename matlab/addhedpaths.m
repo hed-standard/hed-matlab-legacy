@@ -36,11 +36,11 @@
 
 function addhedpaths(usingEEGLAB)
 addFolders();
-if usingEEGLAB
-    preserveWorkspace();
-else
+% if usingEEGLAB
+%     preserveWorkspace();
+% else
     addJavaPaths();
-end
+% end
 
     function tempDirectory = getTemporaryDirectory()
         % Returns the temporary directory on the system, if not present
