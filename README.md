@@ -38,6 +38,10 @@ N. Bigdely-Shamlo, J. Cockfield, S. Makeig, T. Rognon, C. LaValle, M. Miyakoshi,
 N. Bigdely-Shamlo, S. Makeig, and K. Robbins (2016). Preparing laboratory and real-world EEG data for large-scale analysis: A containerized approach, Frontiers in Neuroinformatics 1 08 March 2016 | http://dx.doi.org/10.3389/fninf.2016.00007. PMID: 27014048, PMCID: PMC4782059.
 
 ### Releases
+Version 2.7.0 Released 6/28/2020
+* Update CTAGGER (buttons and add new features)
+* Update workflow logic
+
 Version 2.6.0 Released 1/21/2020
 * Major update of CTAGGER UI, including the color scheme and adding some search/tag input features. 
 * Change validation mechanism to validate through web validator. 
