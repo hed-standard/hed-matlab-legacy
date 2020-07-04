@@ -29,7 +29,10 @@
 %       issues
 %                   A cell array containing all of the issues found through
 %                   the validation. Each cell corresponds to the issues
-%                   found on a particular line.
+%                   found on a particular line/event. If there's no issues,
+%                   the cell is empty. Otherwise, cell contains a struct array, 
+%                   each has a code-message pair describing the issue code
+%                   and the issue content
 %
 %       replaceTags
 %                   A cell array containing all of the tags that generated
@@ -82,6 +85,7 @@ issues = validateEventsTags(p);
                 hedStrings{a} = concattags(p.events(a));             
             end
             issues = validateHedStrings(p.hedXml,hedStrings,p.generateWarnings);
+            
         catch ME
             if ME.identifier == "validateHedString:serverError"
                 throw(ME);

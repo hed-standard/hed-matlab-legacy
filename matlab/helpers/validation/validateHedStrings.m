@@ -19,7 +19,12 @@
 % Output:
 %
 %   issues
-%                    issues associated with the hed strings
+%                   A cell array containing all of the issues found through
+%                   the validation. Each cell corresponds to the issues
+%                   found with the corresponding HED string. If there's no issues,
+%                   the cell is empty. Otherwise, cell contains a struct array, 
+%                   each has a code-message pair describing the issue code
+%                   and the issue content
 %
 % Copyright (C) 2019 Dung Truong dt.young112@gmail.com and
 % Kay Robbins kay.robbins@utsa.edu
@@ -39,10 +44,8 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 function issues = validateHedStrings(hedxml, hedStrings, generateWarnings)
 % set up server destination
-% host = 'http://visualtest.cs.utsa.edu/hed';
-host = 'http://localhost:33000';
-% host = 'http://127.0.0.1:5000';
-host = 'http://34.68.100.24';
+%host = 'http://visualtest.cs.utsa.edu/hed';
+host = 'http://127.0.0.1:5000';
 url = [host '/eegsubmit'];
 
 % retrieve CSRF token and cookies
@@ -60,7 +63,9 @@ end
 % submit request to server for validation results
 try
     fprintf(['Validating through server at ' url ' ...\n']);
-    command = sprintf('curl -X POST -H "X-CSRFToken: %s" -H "Cookie: %s" -F hed_xml_file=%s -F hed_strings=''{"hed_strings":%s};type=application/json'' -F check_for_warnings=%d %s', csrftoken, cookie, hed_xml_file, jsonencode(hedStrings), generateWarnings, url);
+    % Submit a POST request to the server at 'url', providing the list of HED strings and some other options
+    % List of HED strings is converted to JSON format
+    command = sprintf('curl -X POST -H "X-CSRFToken: %s" -H "Cookie: %s" -F hed_xml_file=%s -F hed_strings=''%s;type=application/json'' -F check_for_warnings=%d %s', csrftoken, cookie, hed_xml_file, jsonencode(hedStrings), generateWarnings, url);
     [status, result] = system(command);
 catch
     ME = MException('validateHedString:serverError', ...
@@ -70,9 +75,11 @@ end
 
 % parse result
 if status == 0
-    result_splitted = splitlines(result);
-    validation_result = result_splitted{end};
-    json = jsondecode(validation_result);
+    % result is a json object {issues: []}
+    % The value is a list of validation results for each event HED string
+    % If there's no error, validation result is an empty list
+    % else it's a list of dictionaries, each dictionary is an error/warning
+    json = jsondecode(result);
     issues = json.issues;
     fprintf("Finished.\n");
 else

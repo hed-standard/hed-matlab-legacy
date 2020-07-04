@@ -37,9 +37,10 @@
 % Output:
 %
 %   issues
-%                   A cell array containing all of the issues found through
-%                   the validation. Each cell corresponds to the issues
-%                   found on a particular line.
+%                   A struct array containing all of the issues found through
+%                   the validation. Each struct corresponds to the issues
+%                   found on a particular line/event. Empty string if no
+%                   issue
 %
 % Copyright (C) 2012-2016 Thomas Rognon tcrognon@gmail.com,
 % Jeremy Cockfield jeremy.cockfield@gmail.com, and
@@ -68,6 +69,7 @@ issues = validate(p);
         if isfield(p.EEG.event, 'usertags') || ...
                 isfield(p.EEG.event, 'hedtags')
             p.issues = parseeeg(p.hedXml, p.EEG.event, p.generateWarnings);
+            p.issues = parseIssues(p.issues);
             issues = p.issues;
             if p.writeOutputToFile
                 writeOutputFile(p);
@@ -93,7 +95,25 @@ issues = validate(p);
         p.parse(EEG, varargin{:});
         p = p.Results;
     end % parseArguments
-
+    
+    function parsedIssues = parseIssues(issues)
+        % process issues to see if it's all empty. In such case, return
+        % empty string indicating no issue found
+        checkIfEmpty = cellfun(@isempty, issues);
+        if sum(checkIfEmpty) == numel(issues)
+            parsedIssues = '';
+        else
+            parsedIssues = [];
+            for i=1:numel(issues)
+                if ~isempty(issues{i})
+                    issueStruct = [];
+                    issueStruct.event = ['Issue(s) found in event ' num2str(i)];
+                    issueStruct.issues = issues{i};
+                    parsedIssues = [parsedIssues issueStruct];
+                end
+            end
+        end
+    end
     function writeOutputFile(p)
         % Writes the issues to the log file
         p.dir = p.outputFileDirectory;
@@ -117,18 +137,24 @@ issues = validate(p);
 
     function createLogFile(p, empty)
         % Creates a log file containing any issues
-        numErrors = length(p.issues);
         errorFile = fullfile(p.dir, ['validated_' p.file p.ext]);
         fileId = fopen(errorFile,'w');
         if ~empty
-        fprintf(fileId, '%s', p.issues{1});
-        for a = 2:numErrors
-            fprintf(fileId, '\n%s', p.issues{a});
-        end
+            for i=1:numel(p.issues)
+                printIssue(p.issues(i), fileId);
+                fprintf(fileId, '\n');
+            end
         else
             fprintf(fileId, 'No issues were found.');
         end
         fclose(fileId);
     end % createLogFile
-
+    
+    function printIssue(issueStruct, fileId)
+        % key 'event' and 'issues' are defined in parseIssues()
+        fprintf(fileId, '%s:\n',issueStruct.event);
+        for i=1:numel(issueStruct.issues)
+            fprintf(fileId, '\t-%s', issueStruct.issues(i).message); % issues.message is the key defined by Python validator
+        end
+    end
 end % validateeeg
