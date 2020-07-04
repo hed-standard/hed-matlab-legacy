@@ -40,7 +40,7 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1.07  USA
 
 function vers = eegplugin_hedtools(fig, trystrs, catchstrs)
-vers = 'HEDTools2.5.0';
+vers = 'HEDTools2.7.0';
 % Check the number of input argumentsedit 
 if nargin < 3
     error('eegplugin_hedtools requires 3 arguments');
@@ -106,5 +106,5 @@ finalcmd =  [trystrs.no_check finalcmd ifeegcmd savecmd ...
 
 % Add 'Extract epochs by tags' to 'Tools'
 uimenu(parentMenu, 'Label', 'Extract epochs by tags', ...
-    'Position', position, 'Callback', finalcmd);
+    'Position', position, 'userdata', 'startup:off;study:off', 'Callback', finalcmd);
 end

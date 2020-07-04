@@ -61,7 +61,7 @@
 
 function issues = parseeeg(hedXml, events, generateWarnings)
 p = parseArguments(hedXml, events, generateWarnings);
-issues = validateEventsTags(p);
+issues = readStructTags(p);
 
     function p = parseArguments(hedXml, events, generateWarnings)
         % Parses the arguements passed in and returns the results
@@ -73,8 +73,8 @@ issues = validateEventsTags(p);
         p = parser.Results;
     end % parseArguments
 
-    function issues = validateEventsTags(p)
-        % Extract the HED tags from the EEG event structure array and validate them
+    function issues = readStructTags(p)
+        % Extract the HED tags in a structure array and validate them
         p.issues = {};
         p.replaceTags = {};
         p.issueCount = 1;
@@ -95,5 +95,17 @@ issues = validateEventsTags(p);
             end
         end
     end % readStructTags
+
+    function p = validateStructTags(p)
+        % Validates the HED tags in a structure
+        p.structIssues = validateHedTags(p.hedString, ...
+            'hedXml', p.hedXml, 'generateWarnings', p.generateWarnings);
+        if ~isempty(p.structIssues)
+            p.issues{p.issueCount} = ...
+                [sprintf('Issues in event %d:\n', p.structNumber), ...
+                p.structIssues];
+            p.issueCount = p.issueCount + 1;
+        end
+    end % validateStructTags
 
 end % parseeeg

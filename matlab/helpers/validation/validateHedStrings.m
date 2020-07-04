@@ -44,8 +44,7 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 function issues = validateHedStrings(hedxml, hedStrings, generateWarnings)
 % set up server destination
-%host = 'http://visualtest.cs.utsa.edu/hed';
-host = 'http://127.0.0.1:5000';
+host = 'http://visualtest.cs.utsa.edu/hed';
 url = [host '/eegsubmit'];
 
 % retrieve CSRF token and cookies
