@@ -46,9 +46,10 @@
 % Output:
 %
 %   issues
-%                   A cell array containing all of the issues found through
-%                   the validation. Each cell corresponds to the issues
-%                   found on a particular line.
+%                   A struct array containing all of the issues found through
+%                   the validation. Each struct corresponds to the issues
+%                   found on a particular line/event. Empty string if no
+%                   issue.
 %
 %   com              String containing call to tagdir with all
 %                    parameters.
