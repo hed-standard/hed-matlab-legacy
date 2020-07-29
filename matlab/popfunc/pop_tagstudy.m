@@ -146,56 +146,20 @@ end
 fMap = '';
 com = '';
 p = parseArguments(varargin{:});
- 
+
+% Get input parameters
+inputArgs = getkeyvalue({'BaseMap', 'HedXml', 'PreserveTagPrefixes', 'EventFieldsToIgnore'}, varargin{:}); 
+
 % Call function with menu
 fprintf('Begin tagging...\n');
-if p.UseGui
-    % Get the menu input parameters
-    menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
-        'HedXml', 'InDir', ...
-        'PreserveTagPrefixes', 'SelectEventFields', 'UseCTagger'}, varargin{:});
-    % Get the input parameters
-    [canceled, baseMap, hedExtensionsAllowed, ...
-        hedXml, preserveTagPrefixes, ...
-        selectEventFields, useCTagger] = ...
-        pop_tagstudy_input(menuInputArgs{:});
-    menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
-        hedExtensionsAllowed, ...
-        'HedXml', hedXml, 'PreserveTagPrefixes', ...
-        preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
-        'UseCTagger', useCTagger};
-    if canceled
-        return;
-    end
-    
-    ignoreEventFields =  getkeyvalue({'EventFieldsToIgnore'}, varargin{:});
-    tagstudyInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
-        'PreserveTagPrefixes'}, menuOutputArgs{:}) ignoreEventFields];
-    
-    canceled = false;
-    
+if p.UseGui    
     % Create fMap from EEG.event of each EEG set in ALLEEG.
     % If a base map is provided, merge it with the fMap
-    fMap = tagstudy(ALLEEG, tagstudyInputArgs{:});
+    fMap = tagstudy(ALLEEG, inputArgs{:});
+    fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
     
-    taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
-        menuOutputArgs{:});
-    selectEventFields = taggerMenuArgs{2};
-    useCTagger = taggerMenuArgs{4};
- 
-    % if use Ctagger
-    if useCTagger
-        % if select fields to tag
-        if selectEventFields
-            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled] = selectFieldAndTag(fMap, args);
-        else
-            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
-            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
-                menuOutputArgs{:}) {'EventFieldsToIgnore', {}}]; % ignore no fields
-            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
-        end
-    end
+    % Show select field and tag window where the actual tagging happens
+    [fMap, canceled] = selectFieldAndTag(fMap, p);
     
     if canceled
         fprintf('Tagging was canceled\n');
@@ -203,14 +167,14 @@ if p.UseGui
     end
     fprintf('Tagging complete\n');
     
+    % Write tags to EEG
     fprintf('Saving tags... ');
     for k = 1:length(ALLEEG)
 	    ALLEEG(k) = writetags(ALLEEG(k), fMap, 'PreserveTagPrefixes', ...
            p.PreserveTagPrefixes);
     end
     fprintf('Done.\n');
-    
-    inputArgs = [menuOutputArgs ignoreEventFields];
+
     % Save HED if modified
     if fMap.getXmlEdited()
         savehedInputArgs = getkeyvalue({'OverwriteUserHed', ...
@@ -249,10 +213,7 @@ if p.UseGui
     
     % Build command string
     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
-end
- 
-% Call function without menu
-if nargin > 1 && ~p.UseGui
+else % Call function without menu  % nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});

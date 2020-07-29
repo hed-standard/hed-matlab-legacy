@@ -133,7 +133,6 @@
 function [EEG, fMap, com] = pop_tageeg(EEG, varargin)
 fMap = '';
 com = '';
-canceled = false;
 % Display help if inappropriate number of arguments
 if nargin < 1
     EEG = '';
@@ -142,82 +141,25 @@ if nargin < 1
 end
 
 p = parseArguments(EEG, varargin{:});
-
+inputArgs = getkeyvalue({'BaseMap', 'EventFieldsToIgnore' ...
+        'HedXml', 'PreserveTagPrefixes'}, varargin{:});
 % Call function with menu
 if p.UseGui
-    isAlreadyTagged = isfield(EEG.event, 'usertags') || isfield(EEG.event, 'hedtags'); % check if there exist tags in the dataset already
+    % initial tagging
+    tageegInputArgs = {'BaseMap', p.BaseMap, 'HedXml', p.HedXml, 'EventFieldsToIgnore', p.EventFieldsToIgnore};
+    [~, fMap] = tageeg(EEG, tageegInputArgs{:});
+    fMap.setPrimaryMap(p.PrimaryEventField);
     
-    % Get the menu input parameters
-    if ~isAlreadyTagged
-        menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', 'HedXml', 'PreserveTagPrefixes', 'UseCTagger'}, varargin{:});
-        [canceled, baseMap, hedExtensionsAllowed, ...
-            hedXml, preserveTagPrefixes, useCTagger] = pop_tageeg_input(menuInputArgs{:});
-    else
-        canceled = false;
-        baseMap = '';
-        hedXml = which('HED.xml');
-        hedExtensionsAllowed = true;
-        useCTagger = true;
-        preserveTagPrefixes = false;
-    end
-    menuOutputArgs = {'BaseMap', baseMap, 'HedExtensionsAllowed', ...
-        hedExtensionsAllowed, 'HedXml', hedXml, 'PreserveTagPrefixes', ...
-        preserveTagPrefixes, 'UseCTagger', useCTagger};
+    % Show select field and tag window where the actual tagging happens
+    [fMap, canceled] = selectFieldAndTag(fMap, p);
 
     if canceled
+        fprintf('Tagging was canceled\n');
         return;
-    end
-    
-    ignoreEventFields =  getkeyvalue({'EventFieldsToIgnore'}, varargin{:});
-    tageegInputArgs = [getkeyvalue({'BaseMap', 'HedXml', ...
-        'PreserveTagPrefixes'}, menuOutputArgs{:}) ignoreEventFields];
-    
-    canceled = false;
-    
-    % Extract fMap and (if an fMap is provided) merge base map
-    [~, fMap] = tageeg(EEG, tageegInputArgs{:});
-    
-%     taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
-%         menuOutputArgs{:});
-%     selectEventFields = taggerMenuArgs{2};
-%     useCTagger = taggerMenuArgs{4};
-    
-    % if use Ctagger
-    if useCTagger
-        % set primary field to be EEG.event.type
-        fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
-        
-        % tag EEG.event.type
-        fields = fMap.getFields();
-        args = {'EventFieldsToIgnore', setdiff(fields,'type')};
-        editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
-                menuOutputArgs{:}) args]; 
-        [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:}); % call CTAGGER
-
-        if canceled
-            fprintf('Tagging was canceled\n');
-            return;
-        end
-        % prompt for continue tagging using other fields
-        [~,~,handleObj]=supergui( 'geomhoriz', { 1 1 [1 1] }, 'uilist', { ...
-             { 'style', 'text', 'string', 'Do you want to add more tags using other EEG.event fields?' }, { }, ...
-             { 'style', 'pushbutton' , 'string', 'No', 'callback', @otherFieldsCBNo } ...
-             { 'style', 'pushbutton' , 'string', 'Yes', 'tag', 'ok', 'callback', {@otherFieldsCBYes} }} );
-        okbtn = handleObj{4};
-        waitfor(okbtn, 'UserData'); % ok button
-        useOtherFields = okbtn.UserData;
-        close(get(handleObj{1}, 'parent'));
-        if useOtherFields
-            % tag other fields
-            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled] = selectFieldAndTag(fMap, args);
-        end
-    end
-    
+    end    
 
     fprintf('Tagging complete\n');
     
-    inputArgs = [menuOutputArgs ignoreEventFields];
     % Save HED if modified
     if fMap.getXmlEdited()
         savehedInputArgs = getkeyvalue({'OverwriteUserHed', ...
@@ -233,13 +175,10 @@ if p.UseGui
     end
     
     % Write tags to EEG
-    writeTagsInputArgs = getkeyvalue({'PreserveTagPrefixes'}, ...
-        menuOutputArgs{:});
-    EEG = writetags(EEG, fMap, writeTagsInputArgs{:}); 
-end
-
-% Call function without menu
-if nargin > 1 && ~p.UseGui
+    fprintf('Saving tags... ');
+    EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes); 
+    fprintf('Done.\n');
+else % Call function without menu %if nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'EventFieldsToIgnore' ...
         'HedXml', 'PreserveTagPrefixes'}, varargin{:});
     [EEG, fMap] = tageeg(EEG, inputArgs{:});
