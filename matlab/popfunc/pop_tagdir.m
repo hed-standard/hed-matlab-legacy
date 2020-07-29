@@ -159,68 +159,26 @@ fPaths = '';
 com = '';
 
 p = parseArguments(varargin{:});
-
+% Get the input parameters
+inputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
+        'HedExtensionsAnywhere', 'HedXml', 'InDir', ...
+        'PreserveTagPrefixes', 'UseCTagger', 'EventFieldsToIgnore', 'DoSubDirs'}, ...
+        varargin{:});
+    
 % Call function with menu
 if p.UseGui
-    % Get the menu input parameters
-    menuInputArgs = getkeyvalue({'BaseMap', 'HedExtensionsAllowed', ...
-        'HedExtensionsAnywhere', 'HedXml', 'InDir', ...
-        'PreserveTagPrefixes', 'SelectEventFields', 'UseCTagger'}, ...
-        varargin{:});
-    [canceled, baseMap, doSubDirs, hedExtensionsAllowed, ...
-        hedXml, inDir, preserveTagPrefixes, ...
-        selectEventFields, useCTagger] = ...
-        pop_tagdir_input(menuInputArgs{:});
-    menuOutputArgs = {'BaseMap', baseMap, 'DoSubDirs', doSubDirs, ...
-        'HedExtensionsAllowed', hedExtensionsAllowed, ...
-        'HedXml', hedXml, 'InDir', inDir, 'PreserveTagPrefixes', ...
-        preserveTagPrefixes, 'SelectEventFields', selectEventFields, ...
-        'UseCTagger', useCTagger};
-    if canceled
-        return;
-    end
+    % Initial tagging (merge base map if provided)
+    [fMap, fPaths] = tagdir(inDir, inputArgs{:});
+    fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
     
-    % Get tagdir input args
-    ignoreEventFields =  getkeyvalue({'EventFieldsToIgnore'}, varargin{:});
-    tagdirInputArgs = [getkeyvalue({'BaseMap', 'DoSubDirs', 'HedXml', ...
-        'PreserveTagPrefixes'}, menuOutputArgs{:}) ignoreEventFields];
-    
-    canceled = false;
-    
-    % Merge base map
-    [fMap, fPaths] = tagdir(inDir, tagdirInputArgs{:});
-    
-    % Get event field selection and tagging arguments
-    taggerMenuArgs = getkeyvalue({'SelectEventFields', 'UseCTagger'}, ...
-        menuOutputArgs{:});
-    selectEventFields = taggerMenuArgs{2};
-    useCTagger = taggerMenuArgs{4};
-    
-
-    % Select field and add tags
-    if useCTagger && ~canceled
-        ignoredEventFields = {};
-        % if select fields to tag
-        if selectEventFields
-            args = ['PrimaryEventField',p.PrimaryEventField, menuOutputArgs];
-            [fMap, canceled, ~] = selectFieldAndTag(fMap, args);
-        else
-            fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
-            selectmapsOutputArgs = {'EventFieldsToIgnore', ignoredEventFields}; % ignore no fields
-            editmapsInputArgs = [getkeyvalue({'HedExtensionsAllowed', 'PreserveTagPrefixes'}, ...
-                menuOutputArgs{:}) selectmapsOutputArgs];
-            [fMap, canceled] = editmaps(fMap, editmapsInputArgs{:});
-        end
-    end
+    % Show select field and tag window where the actual tagging happens
+    [fMap, canceled, ~] = selectFieldAndTag(fMap, p);
     
     if canceled
         fprintf('Tagging was canceled\n');
         return;
     end
     fprintf('Tagging complete\n');
-    
-    % Build command string
-    inputArgs = [menuOutputArgs ignoreEventFields];
     
     % Save HED if modified
     if fMap.getXmlEdited()
@@ -255,10 +213,7 @@ if p.UseGui
     
     % Build command string
     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
-end
-
-% Call function without menu
-if nargin > 1 && ~p.UseGui
+else % Call function without menu % nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});
