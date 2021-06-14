@@ -28,6 +28,8 @@
 %   mergedList
 %                   A merged cell array consisting of tags from tList1 and
 %                   tList2 based on the preserve prefix option.
+%                   If merged cell contains only one string, returns a
+%                   string
 %
 % Notes:
 %

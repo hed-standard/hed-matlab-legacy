@@ -104,6 +104,12 @@ classdef tagMap < hgsetget
             
             theKey = newStruct.code;
             
+            % if HED key detected, meaning the field containing it is Value
+            % field -> remove all other codes and only keep HED code
+            if strcmp(theKey, 'HED')
+                obj.clearTagMap()
+            end
+            
             % Does this value exist in this object?
             if ~obj.TagMap.isKey(theKey) && strcmpi('Merge', p.UpdateType)                
                 theValue = newStruct.tags;
@@ -228,6 +234,9 @@ classdef tagMap < hgsetget
             obj.Primary = primary;
         end % setPrimary
         
+        function clearTagMap(obj)
+            obj.TagMap = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        end
     end % public methods
     
     methods(Static = true)

@@ -151,7 +151,8 @@ if p.UseGui
     fMap.setPrimaryMap(p.PrimaryEventField);
     
     % Show select field and tag window where the actual tagging happens
-    [fMap, canceled] = selectFieldAndTag(fMap, p);
+%     [fMap, canceled] = selectFieldAndTag(fMap, p);
+    [fMap, canceled] = useCTagger(fMap,EEG);
 
     if canceled
         fprintf('Tagging was canceled\n');
