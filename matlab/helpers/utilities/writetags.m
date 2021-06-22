@@ -21,6 +21,11 @@
 %
 %   Optional (key/value):
 %
+%   'WriteIndividualTags'
+%                    Whether to write assembled HED string for each event
+%                    to EEG.event. Default is false; only write summary
+%                    tags. Assembling should only be done on demand at analysis
+% 
 %   'EventFieldsToIgnore'
 %                    A cell array containing the field names to exclude.
 %
@@ -54,11 +59,13 @@ p = parseArguments(eData, fMap, varargin{:});
 
 tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % exclude fields to ignore
 
-if isfield(eData, 'event') && isstruct(eData.event)
+
+if p.WriteIndividualTags && isfield(eData, 'event') && isstruct(eData.event)
     tFields = intersect(fieldnames(eData.event), tFields); % only write tags to fields that exist in both fMap in EEG.event
     eData = writeIndividualTags(eData, fMap, tFields, ...
         p.PreserveTagPrefixes);
 end
+
 eData = writeSummaryTags(fMap, eData, tFields);
 
     function eData = writeIndividualTags(eData, fMap, eFields, ...
@@ -118,6 +125,7 @@ eData = writeSummaryTags(fMap, eData, tFields);
         parser.addRequired('eData', @(x) (isempty(x) || isstruct(x)));
         parser.addRequired('fMap', @(x) (~isempty(x) && isa(x, ...
             'fieldMap')));
+        parser.addParamValue('WriteIndividualTags', false, @islogical);
         parser.addParamValue('EventFieldsToIgnore', {}, @(x) (iscellstr(x)));
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);
         parser.parse(eData, fMap, varargin{:});

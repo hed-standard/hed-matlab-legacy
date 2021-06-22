@@ -150,10 +150,10 @@ end
         if isfield(p.edata, 'event') && isstruct(p.edata.event)
             eventFields = fieldnames(p.edata.event);
         end
-        if isfield(p.edata, 'urevent') && isstruct(p.edata.urevent)
-            eventFields = union(eventFields, ...
-                fieldnames(p.edata.urevent));
-        end
+%         if isfield(p.edata, 'urevent') && isstruct(p.edata.urevent)
+%             eventFields = union(eventFields, ...
+%                 fieldnames(p.edata.urevent));
+%         end
         eventFields = setdiff(eventFields, p.EventFieldsToIgnore);
     end % getEventFields
 

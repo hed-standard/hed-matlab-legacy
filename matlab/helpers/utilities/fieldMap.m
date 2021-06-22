@@ -68,7 +68,7 @@
 classdef fieldMap < hgsetget
     properties (Constant = true)
         DefaultXml = 'HED.xml';
-        DefaultSchema = 'HED.xsd';
+%         DefaultSchema = 'HED.xsd';
     end % constant
     
     properties (Access = private)
@@ -80,7 +80,7 @@ classdef fieldMap < hgsetget
         Xml                  % Tag hierarchy as an XML string
         XmlEdited            % If true, the HED has been modified through
         % the CTagger (default false)
-        XmlSchema            % String containing the XML schema
+%         XmlSchema            % String containing the XML schema
     end % private properties
     
     methods
@@ -90,7 +90,7 @@ classdef fieldMap < hgsetget
             obj.Description = p.Description;
             obj.PreserveTagPrefixes = p.PreserveTagPrefixes;
             obj.Xml = p.Xml;
-            obj.XmlSchema = p.XmlSchema;
+%             obj.XmlSchema = p.XmlSchema;
             obj.GroupMap = containers.Map('KeyType', 'char', ...
                 'ValueType', 'any');
         end % fieldMap constructor
@@ -139,7 +139,7 @@ classdef fieldMap < hgsetget
             newMap.Description = obj.Description;
             newMap.PreserveTagPrefixes = obj.PreserveTagPrefixes;
             newMap.Xml = obj.Xml;
-            newMap.XmlSchema = obj.XmlSchema;
+%             newMap.XmlSchema = obj.XmlSchema;
             values = obj.GroupMap.values;
             tMap = containers.Map('KeyType', 'char', 'ValueType', 'any');
             for k = 1:length(values)
@@ -213,8 +213,21 @@ classdef fieldMap < hgsetget
             tags = '';
             try
                 tMap = obj.GroupMap(field);
-                eStruct = tMap.getValue(value);
-                tags = eStruct.getTags();
+                codes = tMap.getCodes();
+                if any(strcmp('HED',codes)) && ~strcmp(lower(value), 'n/a')
+                    eStruct = tMap.getValue('HED');
+                    tags = eStruct.getTags();
+                    if iscell(tags(1))
+                        for c=1:numel(tags)
+                            tags{c} = strrep(tags{c},'#',value);
+                        end
+                    else
+                        tags = strrep(tags,'#',value);
+                    end
+                else
+                    eStruct = tMap.getValue(value);
+                    tags = eStruct.getTags();
+                end
             catch me %#ok<NASGU>
             end
         end % getTags
@@ -310,6 +323,15 @@ classdef fieldMap < hgsetget
     end % public methods
     
     methods (Static = true)
+        function fMap = createfMapFromStruct(structfMap)
+            % Create a fieldmap from its struct form
+            fMap = fieldMap('Description', structfMap.description, 'XML', structfMap.xml);
+            map = structfMap.map;
+            fields = {map.field};
+            for i=1:numel(fields)
+                fMap.addValues(fields{i},map(i).values);
+            end
+        end
         
         function baseTags = loadFieldMap(tagsFile)
             % Load a field map from a .mat file that contains a fieldMap
@@ -348,8 +370,8 @@ classdef fieldMap < hgsetget
                 @(x) validateattributes(x, {'logical'}, {}));
             parser.addParamValue('Xml', fileread(fieldMap.DefaultXml), ...
                 @(x) (ischar(x)));
-            parser.addParamValue('XmlSchema', ...
-                fileread(fieldMap.DefaultSchema), @ischar);
+%             parser.addParamValue('XmlSchema', ...
+%                 fileread(fieldMap.DefaultSchema), @ischar);
             parser.parse(varargin{:})
             p = parser.Results;
         end % parseArguments
