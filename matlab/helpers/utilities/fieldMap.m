@@ -323,6 +323,15 @@ classdef fieldMap < hgsetget
     end % public methods
     
     methods (Static = true)
+        function fMap = createfMapFromStruct(structfMap)
+            % Create a fieldmap from its struct form
+            fMap = fieldMap('Description', structfMap.description, 'XML', structfMap.xml);
+            map = structfMap.map;
+            fields = {map.field};
+            for i=1:numel(fields)
+                fMap.addValues(fields{i},map(i).values);
+            end
+        end
         
         function baseTags = loadFieldMap(tagsFile)
             % Load a field map from a .mat file that contains a fieldMap

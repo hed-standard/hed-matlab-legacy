@@ -1,4 +1,6 @@
-% Allows a user to extract epochs based on HED tags using a GUI.
+% Allows a user to extract epochs based on HED tags using a GUI. After
+% epoched, EEG events will have a column containing assembled HED strings
+% for each event. 
 %
 % Usage:
 %
@@ -129,18 +131,26 @@ if nargin < 1
 end;
 
 p = parseArguments(EEG, varargin{:});
+
+if ~isfield(EEG,'etc') || ~isfield(EEG.etc, 'tags')
+    error('Tag summary not found in EEG.etc. Make sure you annotated the dataset first')
+end
+fprintf("Assembling HED annotations for events...");
+fMap = fieldMap.createfMapFromStruct(EEG.etc.tags);
+EEG_assembled = writetags(EEG, fMap, 'WriteIndividualTags', true);
+
 if nargin < 2
     
-    uniquetags = finduniquetags(arrayfun(@concattags, EEG.event, ...
+    uniquetags = finduniquetags(arrayfun(@concattags, EEG_assembled.event, ...
         'UniformOutput', false));
     % Get input arguments from GUI
     [canceled, querystring, exclusiveTags, newName, timelim, valueLim] = ...
-        epochhed_input('newname', EEG.setname, 'querystring', ...
+        epochhed_input('newname', EEG_assembled.setname, 'querystring', ...
         p.querystring, 'uniquetags', uniquetags);
     if canceled
         return;
     end
-    [EEG, indices] = epochhed(EEG, querystring, 'timelim', timelim, ...
+    [EEG, indices] = epochhed(EEG_assembled, querystring, 'timelim', timelim, ...
         'exclusivetags', exclusiveTags, 'newname', newName, 'valuelim', ...
         valueLim);
     com = char(['epochhed(EEG, ' ...
@@ -152,7 +162,7 @@ if nargin < 2
     return;
 end
 
-[EEG, indices] = epochhed(EEG, querystring, varargin{:});
+[EEG, indices] = epochhed(EEG_assembled, querystring, varargin{:});
 com = char(['pop_epochhed(EEG, ' ...
     '''' querystring ''', ', ...
     '''timelim'', ''', vector2str(timelim) ', '...

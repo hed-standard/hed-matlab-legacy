@@ -22,11 +22,12 @@ function [fMap, canceled] = useCTagger(fMap, EEG)
         figure_handle = get(handles{1},'parent');
         waitfor(figure_handle);
     end
-    [hedMap, canceled] = loadCTagger();
     if ~canceled
-        fMap.merge(hedMap, 'Merge',{},{});   
+        [hedMap, canceled] = loadCTagger();
+        if ~canceled
+            fMap.merge(hedMap, 'Merge',{},{});   
+        end
     end
-    
     function [result, canceled] = loadCTagger()
        canceled = false;
        notified = false;
