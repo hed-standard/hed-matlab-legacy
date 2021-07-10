@@ -46,17 +46,17 @@ function [fMap, canceled] = useCTagger(fMap)
         result = [];
         for i=1:numel(fieldnames)
            field = fieldnames{i};
-           result.(field).HED = [];
+           result.(field).HED = containers.Map;
            values = fMap.getValues(field);
            for v=1:numel(values)
                code = values{v}.getCode();
-               if ~isempty(str2num(code))
-                   code = ['x' code];
-               end
+%                if ~isempty(str2num(code))
+%                    code = ['x' code];
+%                end
                if ~isempty(values{v}.getTags())
-                   result.(field).HED.(code) = tagList.stringify(values{v}.getTags());
+                   result.(field).HED(code) = tagList.stringify(values{v}.getTags());
                else
-                   result.(field).HED.(code) = "";
+                   result.(field).HED(code) = "";
                end
            end
         end
