@@ -169,9 +169,12 @@ if p.UseGui
     
     % Write tags to EEG
     fprintf('Saving tags... ');
+    % Write tag map to STUDY
+    STUDY = writetags(STUDY, fMap, 'WriteIndividualTags', false);
+    % Write tag map to each dataset
     for k = 1:length(ALLEEG)
 	    ALLEEG(k) = writetags(ALLEEG(k), fMap, 'PreserveTagPrefixes', ...
-           p.PreserveTagPrefixes);
+           p.PreserveTagPrefixes, 'WriteIndividualTags', false);
     end
     fprintf('Done.\n');
 
@@ -189,37 +192,41 @@ if p.UseGui
         inputArgs = [inputArgs savehedOutputArgs];
     end
     
-    % Save field map containing tags
-    savefmapInputArgs = getkeyvalue({'FMapDescription', ...
-        'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
-    [fMap, fMapDescription, fMapSaveFile] = ...
-        pop_savefmap(fMap, savefmapInputArgs{:});
-    savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
-        'FMapSaveFile', fMapSaveFile};
+%     % Save field map containing tags
+%     savefmapInputArgs = getkeyvalue({'FMapDescription', ...
+%         'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
+%     [fMap, fMapDescription, fMapSaveFile] = ...
+%         pop_savefmap(fMap, savefmapInputArgs{:});
+%     savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
+%         'FMapSaveFile', fMapSaveFile};
     
-    % Save datasets
-    answer = questdlg2('Do you want to overwrite the original datasets to include the HED tags?','Save datasets');
-    if strcmp(answer,'Yes')
-        overwriteDatasets = true;
-    else
-        overwriteDatasets = false;
-    end
-    saveheddatasetsOutputArgs = {'OverwriteDatasets', overwriteDatasets};
-    if overwriteDatasets
+%     % Save datasets
+%     answer = questdlg2('Do you want to overwrite the original datasets to include the HED tags?','Save datasets');
+%     if strcmp(answer,'Yes')
+%         overwriteDatasets = true;
+%     else
+%         overwriteDatasets = false;
+%     end
+%     overwriteDatasets = true;
+%     saveheddatasetsOutputArgs = {'OverwriteDatasets', overwriteDatasets};
+    saveheddatasetsOutputArgs = {'OverwriteDatasets', true};
+%     if overwriteDatasets
         for i=1:length(ALLEEG)
            pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(k).filepath); 
         end
-    end
+%     end
     
     % Build command string
-    inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
+%     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
+    inputArgs = [inputArgs saveheddatasetsOutputArgs];
 else % Call function without menu  % nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});
     fMap = tagstudy(ALLEEG, inputArgs{:});
 end
- 
+
+fprintf('Tagging completed.\n');
 com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
  

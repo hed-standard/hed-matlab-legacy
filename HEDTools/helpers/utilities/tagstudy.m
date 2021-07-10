@@ -76,7 +76,6 @@ function [fMap, canceled] = tagstudy(STUDY, ALLEEG, varargin)
 
 p = parseArguments(varargin{:});
 
-canceled = 0;
 [fMap, canceled] = findStudyTags(STUDY, ALLEEG, p);
 if ~canceled && ~isempty(p.BaseMap)
     fMap = mergeBaseTags(fMap, p);
@@ -93,16 +92,18 @@ end
             p.EventFieldsToIgnore), {});
     end % mergeBaseTags
  
-    function [fMap, canceled, studyFields] = findStudyTags(STUDY, ALLEEG, p)
+%     function [fMap, canceled, studyFields] = findStudyTags(STUDY, ALLEEG, p)
+    function [fMap, canceled] = findStudyTags(STUDY, ALLEEG, p)
+        canceled = 0;
         if hasSummaryTags(STUDY)
             fMap = etc2fMap(STUDY, p);
         else
             fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
             % Find the existing tags from the study datasets
-            studyFields = {};
+%             studyFields = {};
             categoricalFields = {};
             for k = 1:length(ALLEEG) % Assemble the list
-                studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
+%                 studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
                 [fMapTemp, canceled, categoricalFields] = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
                     p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
                     p.EventFieldsToIgnore, 'HedXml', p.HedXml, 'CategoricalFields', categoricalFields);
