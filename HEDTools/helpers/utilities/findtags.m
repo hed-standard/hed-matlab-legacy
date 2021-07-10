@@ -50,11 +50,13 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-function fMap = findtags(edata, varargin)
+function [fMap, canceled] = findtags(edata, varargin)
 p = parseArguments(edata, varargin{:});
+canceled = 0;
 if  hasSummaryTags(p)
     fMap = etc2fMap(p);
 else
+    fprintf("No tag map found. Creating new tag map...\n");
     fMap = events2fMap(p);
 end
 
@@ -82,7 +84,7 @@ end
     function fMap = etc2fMap(p)
         % Adds field values to the field maps from the .event and .etc
         % field
-        fMap = intializefMap(p);
+        fMap = initializefMap(p);
         etcFields = getEtcFields(p);
         eventFields = setdiff(getEventFields(p), etcFields);
         for k = 1:length(etcFields)
@@ -93,7 +95,7 @@ end
         end
     end % etc2fMap
 
-    function fMap = intializefMap(p)
+    function fMap = initializefMap(p)
         % Initialized the field maps
         %         if hasXML(p)
         %             xml = p.edata.etc.tags.xml;
@@ -101,16 +103,56 @@ end
         xml = fileread(p.HedXml);
         %         end
         fMap = fieldMap('Xml', xml, 'PreserveTagPrefixes', ...
-            p.PreserveTagPrefixes);
-    end % intializefMap
+            p.PreserveTagPrefixes);            
+    end % initializefMap
+    
+    function [eventFields, categoricalFields] = selectCategoricalFields(p)
+        % Helper function to initialize fieldMap
+        % Parse the fields in the EEG.event structure and show interface for user
+        % to select categorical fields. 
+        % Return a structure mapping each field to their list of unique
+        % categorical values. If it's a value field, it has one unique code
+        % "HED"
+        eventFields = getEventFields(p);
+        categoricalFields = {};
+        %% Defining GUI elements
+        geometry = {[1] ...
+                    [1] ...
+                    [1 1]};
+        uilist = {...
+            {'Style', 'text', 'string', 'Select categorical fields:'} ...
+            {'Style', 'listbox', 'string', eventFields, 'tag', 'listboxCB', 'HorizontalAlignment','left', 'Max',2,'Min',0} ...
+            { 'style', 'pushbutton' , 'string', 'Cancel', 'tag', 'cancel', 'callback', @cancelCallback},...
+            { 'style', 'pushbutton' , 'string', 'Done', 'tag', 'ok', 'callback', @doneCallback}};
 
+        % Draw supergui
+        [~,~, handles] = supergui( 'geomhoriz', geometry, 'geomvert',[1 8 1], 'uilist', uilist, 'title', 'Select field to use for tagging -- pop_tageeg()');
+        figure_handle = get(handles{1},'parent');
+        waitfor(figure_handle);                    
+            
+        function cancelCallback(~, ~)
+            canceled = 1;
+            close(gcbf);
+        end
+        function doneCallback(~, ~)
+            canceled = 0;
+            listbox = get(findobj('tag','listboxCB'));
+            selected = listbox.Value;
+            categoricalFields = eventFields(selected);
+            close(gcbf);
+        end
+    end
     function fMap = events2fMap(p)
         % Creates and populates the field maps from the .event and
-        % .urevent fields
-        fMap = intializefMap(p);
-        eventFields = getEventFields(p);
+        % .urevent fields (deprecated)
+        fMap = initializefMap(p);
+        [eventFields, categoricalFields] = selectCategoricalFields(p);
         for k = 1:length(eventFields)
-            fMap = addEventValues(p, fMap, eventFields{k});
+            if any(strcmp(eventFields{k}, categoricalFields))
+                fMap = addEventValues(p, fMap, eventFields{k});
+            else
+                fMap.addValues(eventFields{k}, tagList('HED'));
+            end
         end
     end % events2fMap
 
@@ -135,17 +177,17 @@ end
             valueForm(j) = tagList(num2str(tValues{j}));
         end
         fMap.addValues(eventField, valueForm);
-        if isfield(p.edata.event, 'usertags')
-            tMap = extracttags(p.edata.event, eventField);
-            tMapValues = getValues(tMap);
-            for j = 1:length(tMapValues)
-                fMap.addValues(eventField, tMapValues{j});
-            end
-        end
+%         if isfield(p.edata.event, 'usertags')
+%             tMap = extracttags(p.edata.event, eventField);
+%             tMapValues = getValues(tMap);
+%             for j = 1:length(tMapValues)
+%                 fMap.addValues(eventField, tMapValues{j});
+%             end
+%         end
     end % addEventValues
 
     function eventFields  = getEventFields(p)
-        % Gets all of the event fields from the .event and .urevent fields
+        % Gets all of the event fields from the .event % and .urevent fields (deprecated)
         eventFields = {};
         if isfield(p.edata, 'event') && isstruct(p.edata.event)
             eventFields = fieldnames(p.edata.event);
@@ -162,7 +204,8 @@ end
         etcFields = {p.edata.etc.tags.map.field};
         etcFields = setdiff(etcFields, p.EventFieldsToIgnore);
     end % getEtcFields
-
+    
+    
     function p = parseArguments(edata, varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;

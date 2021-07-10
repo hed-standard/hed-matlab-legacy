@@ -247,7 +247,7 @@ classdef fieldMap < hgsetget
                 values = obj.GroupMap(type).getValues();
             else
                 values = '';
-            end;
+            end
         end % getValues
         
         function xml = getXml(obj)
@@ -264,6 +264,22 @@ classdef fieldMap < hgsetget
             result = ~isempty(field) && obj.GroupMap.isKey(field);
         end
         
+        function result = isEmpty(obj)
+            % Check if the fieldMap is empty (no fields or none of the
+            % fields has tagMap)
+            fields = obj.getFields();
+            if isempty(fields)
+                result = 0;
+            else
+                fMapStruct = obj.getStruct();
+                if all(arrayfun(@(field) isempty(fMapStruct.map(field)), 1:length(fields)))
+                    result = 0;
+                else
+                    result = 1;
+                end
+            end
+                
+        end
         function merge(obj, fMap, updateType, excludeFields, includeFields)
             % Combine another fieldMap with this object based on update
             % type

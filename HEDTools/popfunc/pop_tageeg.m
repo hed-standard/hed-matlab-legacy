@@ -147,18 +147,22 @@ inputArgs = getkeyvalue({'BaseMap', 'EventFieldsToIgnore' ...
 if p.UseGui
     % initial tagging
     tageegInputArgs = {'BaseMap', p.BaseMap, 'HedXml', p.HedXml, 'EventFieldsToIgnore', p.EventFieldsToIgnore};
-    [~, fMap] = tageeg(EEG, tageegInputArgs{:});
-    fMap.setPrimaryMap(p.PrimaryEventField);
-    
-    % Show select field and tag window where the actual tagging happens
-%     [fMap, canceled] = selectFieldAndTag(fMap, p);
-    [fMap, canceled] = useCTagger(fMap,EEG);
-
+    [~, fMap, canceled] = tageeg(EEG, tageegInputArgs{:});
     if canceled
         fprintf('Tagging was canceled\n');
         return;
-    end    
+    else
+        fMap.setPrimaryMap(p.PrimaryEventField);
 
+        % Show select field and tag window where the actual tagging happens
+    %     [fMap, canceled] = selectFieldAndTag(fMap, p);
+        [fMap, canceled] = useCTagger(fMap);
+
+        if canceled
+            fprintf('Tagging was canceled\n');
+            return;
+        end    
+    end
     fprintf('Tagging complete\n');
     
     % Save HED if modified

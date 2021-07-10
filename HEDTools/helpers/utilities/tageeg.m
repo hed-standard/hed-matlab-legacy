@@ -74,16 +74,19 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-function [EEG, fMap] = tageeg(EEG, varargin)
+function [EEG, fMap, canceled] = tageeg(EEG, varargin)
 p = parseArguments(EEG, varargin{:});
-fMap = findtags(EEG, 'PreserveTagPrefixes', p.PreserveTagPrefixes, ...
+[fMap, canceled] = findtags(EEG, 'PreserveTagPrefixes', p.PreserveTagPrefixes, ...
     'EventFieldsToIgnore', p.EventFieldsToIgnore, 'HedXml', p.HedXml);
-if ~isempty(p.BaseMap)
-    fMap = mergeBaseTags(p, fMap);
-end
-EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', ...
-    p.PreserveTagPrefixes);
 
+% user could cancel at the categorical field selection window
+if ~canceled
+    if ~isempty(p.BaseMap)
+        fMap = mergeBaseTags(p, fMap);
+    end
+    EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', ...
+        p.PreserveTagPrefixes);
+end
     function fMap = mergeBaseTags(p, fMap)
         % Merge baseMap and fMap tags
         if isa(p.BaseMap, 'fieldMap')
