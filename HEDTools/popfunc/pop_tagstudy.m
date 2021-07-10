@@ -155,11 +155,11 @@ fprintf('Begin tagging...\n');
 if p.UseGui    
     % Create fMap from EEG.event of each EEG set in ALLEEG.
     % If a base map is provided, merge it with the fMap
-    fMap = tagstudy(ALLEEG, inputArgs{:});
-    fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+    fMap = tagstudy(STUDY, ALLEEG, inputArgs{:});
+%     fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
     
     % Show select field and tag window where the actual tagging happens
-    [fMap, canceled] = selectFieldAndTag(fMap, p);
+    [fMap, canceled] = useCTagger(fMap);
     
     if canceled
         fprintf('Tagging was canceled\n');

@@ -50,7 +50,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
-function [fMap, canceled] = findtags(edata, varargin)
+function [fMap, canceled, categoricalFields] = findtags(edata, varargin)
 p = parseArguments(edata, varargin{:});
 canceled = 0;
 if  hasSummaryTags(p)
@@ -146,7 +146,12 @@ end
         % Creates and populates the field maps from the .event and
         % .urevent fields (deprecated)
         fMap = initializefMap(p);
-        [eventFields, categoricalFields] = selectCategoricalFields(p);
+        if isempty(p.CategoricalFields)
+            [eventFields, categoricalFields] = selectCategoricalFields(p);
+        else
+            eventFields = getEventFields(p);
+            categoricalFields = p.CategoricalFields;
+        end
         for k = 1:length(eventFields)
             if any(strcmp(eventFields{k}, categoricalFields))
                 fMap = addEventValues(p, fMap, eventFields{k});
@@ -216,6 +221,7 @@ end
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
         parser.addParamValue('PreserveTagPrefixes', false, ...
             @(x) validateattributes(x, {'logical'}, {}));
+        parser.addParamValue('CategoricalFields', {}, @(x) (iscellstr(x)));
         parser.parse(edata, varargin{:});
         p = parser.Results;
     end % parseArguments

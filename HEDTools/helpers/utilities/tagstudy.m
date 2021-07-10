@@ -72,12 +72,13 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function fMap = tagstudy(ALLEEG, varargin)
+function [fMap, canceled] = tagstudy(STUDY, ALLEEG, varargin)
 
 p = parseArguments(varargin{:});
 
-fMap = findStudyTags(ALLEEG, p);
-if ~isempty(p.BaseMap)
+canceled = 0;
+[fMap, canceled] = findStudyTags(STUDY, ALLEEG, p);
+if ~canceled && ~isempty(p.BaseMap)
     fMap = mergeBaseTags(fMap, p);
 end
  
@@ -92,20 +93,54 @@ end
             p.EventFieldsToIgnore), {});
     end % mergeBaseTags
  
-    function [fMap, studyFields] = findStudyTags(ALLEEG, p)
-        fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
-        
-        % Find the existing tags from the study datasets
-        studyFields = {};
-        for k = 1:length(ALLEEG) % Assemble the list
-            studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
-            fMapTemp = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
-                p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
-                p.EventFieldsToIgnore, 'HedXml', p.HedXml);
-            fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
+    function [fMap, canceled, studyFields] = findStudyTags(STUDY, ALLEEG, p)
+        if hasSummaryTags(STUDY)
+            fMap = etc2fMap(STUDY, p);
+        else
+            fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
+            % Find the existing tags from the study datasets
+            studyFields = {};
+            categoricalFields = {};
+            for k = 1:length(ALLEEG) % Assemble the list
+                studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
+                [fMapTemp, canceled, categoricalFields] = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
+                    p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
+                    p.EventFieldsToIgnore, 'HedXml', p.HedXml, 'CategoricalFields', categoricalFields);
+                if ~canceled
+                    fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
+                else
+                    return
+                end
+            end
         end
     end % findStudyTags
- 
+    
+    function fMap = etc2fMap(STUDY, p)
+        % Adds field values to the field maps from the .etc field
+        fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
+        etcFields = getEtcFields(STUDY, p);
+        for k = 1:length(etcFields)
+            fMap.addValues(etcFields{k}, STUDY.etc.tags.map(k).values);
+        end
+    end % etc2fMap
+    
+    function summaryFound = hasSummaryTags(STUDY)
+        % Returns true if there are summary tags found in the .etc field
+        summaryFound = isfield(STUDY, 'etc') && ...
+            isstruct(STUDY.etc) && ...
+            isfield(STUDY.etc, 'tags') && ...
+            isstruct(STUDY.etc.tags) && ...
+            isfield(STUDY.etc.tags, 'map') && ...
+            isstruct(STUDY.etc.tags.map) && ...
+            isfield(STUDY.etc.tags.map, 'field');
+    end % hasSummaryTags
+    
+    function etcFields = getEtcFields(STUDY, p)
+        % Gets all of the event fields from the .etc field
+        etcFields = {STUDY.etc.tags.map.field};
+        etcFields = setdiff(etcFields, p.EventFieldsToIgnore);
+    end % getEtcFields
+
     function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
         parser = inputParser;
