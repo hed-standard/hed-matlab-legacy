@@ -101,12 +101,12 @@ end
             fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
             % Find the existing tags from the study datasets
 %             studyFields = {};
-%             categoricalFields = {};
+            categoricalFields = {};
             for k = 1:length(ALLEEG) % Assemble the list
 %                 studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
-                [fMapTemp, canceled] = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
+                [fMapTemp, canceled, catFields] = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
                     p.PreserveTagPrefixes, 'EventFieldsToIgnore', ...
-                    p.EventFieldsToIgnore, 'HedXml', p.HedXml, 'CategoricalFields', {});
+                    p.EventFieldsToIgnore, 'HedXml', p.HedXml, 'CategoricalFields', categoricalFields);
                 if ~canceled
                     fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
                 else
