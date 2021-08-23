@@ -37,9 +37,16 @@
 function tValues = getutypes(estruct, type)
 parseArguments(estruct, type);
 tValues = {};
-values = {estruct.(type)};
+if ~iscell(estruct(1).(type))
+    values = {estruct.(type)};
+else
+    values = [estruct.(type)];
+end
 isNum = cell2mat(cellfun(@isnumeric, values, 'UniformOutput', false));
-tValues = unique(cellfun(@num2str, values, 'UniformOutput', false));
+if all(isNum)
+    values = cellfun(@num2str, values, 'UniformOutput', false);
+end
+tValues = unique(values);
 tEmpty = cellfun(@isempty, tValues);
 tValues(tEmpty) = [];
 tNaN = strcmpi('NaN', tValues);
