@@ -1,10 +1,15 @@
 function [fMap, canceled] = useCTagger(fMap)
     json = getCTaggerJsonFromfMap(fMap);
     
+    % start CTagger
     [hedMap, canceled] = loadCTagger(json);
+    
+    % merge result
     if ~canceled
         fMap.merge(hedMap, 'Merge',{},{});   
     end
+    
+    
     function [result, canceled] = loadCTagger(json)
        canceled = false;
        notified = false;
@@ -30,7 +35,13 @@ function [fMap, canceled] = useCTagger(fMap)
             if isstruct(HED)
                 codes = fieldnames(HED);
                 for c=1:numel(codes)
-                    codeMap = tagList(codes{c});
+                    code = codes{c};
+                    % strip the prefix 'x' if exists in number code
+                    startIndex = regexp(code,'^x\d*$');
+                    if ~isempty(startIndex)
+                        code = code(2:end);
+                    end
+                    codeMap = tagList(code);
                     codeMap.addString(HED.(codes{c}));
                     map.addValues(field,codeMap);
                 end
