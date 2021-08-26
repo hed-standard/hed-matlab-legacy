@@ -10,6 +10,12 @@ load([testCase.TestData.testroot filesep testCase.TestData.Otherdir filesep 'EEG
 testCase.TestData.EEGEpoch = EEGEpoch;
 end
 
+function test_loadCTagger()
+    % EEG contains etc.tags
+    
+    % EEG contains event.HED but no etc.tags (importing from BIDS tsv)
+    
+end
 function test_valid(testCase)
 % Unit test for pop_tageeg
 fprintf('Testing pop_tageeg....REQUIRES USER INPUT\n');
