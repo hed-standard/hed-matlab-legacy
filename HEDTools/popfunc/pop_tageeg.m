@@ -145,17 +145,19 @@ inputArgs = getkeyvalue({'BaseMap', 'EventFieldsToIgnore' ...
         'HedXml', 'PreserveTagPrefixes'}, varargin{:});
 % Call function with menu
 if p.UseGui
-    % initial tagging
-    tageegInputArgs = {'BaseMap', p.BaseMap, 'HedXml', p.HedXml, 'EventFieldsToIgnore', p.EventFieldsToIgnore};
-    [~, fMap, canceled] = tageeg(EEG, tageegInputArgs{:});
+    % extract tag map from EEG. If none exists, create a new empty fMap
+    [fMap, canceled, ~] = findtags(EEG);
+
     if canceled
         fprintf('Tagging was canceled\n');
         return;
     else
-        fMap.setPrimaryMap(p.PrimaryEventField);
-
-        % Show select field and tag window where the actual tagging happens
-    %     [fMap, canceled] = selectFieldAndTag(fMap, p);
+        % if a base map is provided, merge it
+        if isfield(p, 'BaseMap')
+            fMap = mergeBaseTags(p.BaseMap, fMap);
+        end
+        
+        % Use CTagger to add annotations
         [fMap, canceled] = useCTagger(fMap);
 
         if canceled
@@ -184,15 +186,37 @@ if p.UseGui
     EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes); 
     fprintf('Done.\n');
 else % Call function without menu %if nargin > 1 && ~p.UseGui
-    inputArgs = getkeyvalue({'BaseMap', 'EventFieldsToIgnore' ...
-        'HedXml', 'PreserveTagPrefixes'}, varargin{:});
-    [EEG, fMap] = tageeg(EEG, inputArgs{:});
+    % extract tag map from EEG. If none exists, create a new empty fMap
+    [fMap, canceled, ~] = findtags(EEG);
+
+    if canceled
+        fprintf('Tagging was canceled\n');
+        return;
+    else
+        % if a base map is provided, merge it
+        if isfield(p, 'BaseMap')
+            fMap = mergeBaseTags(p.BaseMap, fMap);
+        end
+        % Write tags to EEG
+        fprintf('Saving tags... ');
+        EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes); 
+        fprintf('Done.\n');
+    end
 end
 
 com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
 
 %%% Helper functions
+    %% Merge fMap with a base map
+    function fMap = mergeBaseTags(baseTags, fMap)
+        % Merge baseMap and fMap tags
+        if ~isa(baseTags, 'fieldMap')
+            baseTags = fieldMap.loadFieldMap(baseTags);
+        end
+        fMap.merge(baseTags, 'Update', {}, {});
+    end % mergeBaseTags
+    
     %% Parse arguments
     function p = parseArguments(EEG, varargin)
         % Parses the input arguments and returns the results

@@ -154,11 +154,14 @@ inputArgs = getkeyvalue({'BaseMap', 'HedXml', 'PreserveTagPrefixes', 'EventField
 fprintf('Begin tagging...\n');
 if p.UseGui    
     % Create fMap from EEG.event of each EEG set in ALLEEG.
-    % If a base map is provided, merge it with the fMap
-    fMap = tagstudy(STUDY, ALLEEG, inputArgs{:});
-%     fMap.setPrimaryMap(p.PrimaryEventField); % default is 'type'
+    fMap = findStudyTags(STUDY, ALLEEG);
     
-    % Show select field and tag window where the actual tagging happens
+    % If a base map is provided, merge it with the fMap
+    if isfield(p,'BaseMap')
+        fMap = mergeBaseTags(fMap, p.BaseMap);
+    end
+    
+    % Add annotation using CTagger
     [fMap, canceled] = useCTagger(fMap);
     
     if canceled
@@ -230,6 +233,14 @@ fprintf('Tagging completed.\n');
 com = char(['pop_tagstudy(' logical2str(p.UseGui) ...
     ', ' keyvalue2str(inputArgs{:}) ');']);
  
+%% Helper functions
+    function fMap = mergeBaseTags(fMap, baseTags)
+        % Merge baseMap and fMap tags
+        if ~isa(baseTags, 'fieldMap')
+            baseTags = fieldMap.loadFieldMap(baseTags);
+        end
+        fMap.merge(baseTags, 'Update', {}, {});
+    end % mergeBaseTags
 
     function p = parseArguments(varargin)
         % Parses the input arguments and returns the results
