@@ -66,7 +66,9 @@
 function [fMap, canceled, categoricalFields] = findtags(edata, varargin)
 p = parseArguments(edata, varargin{:});
 canceled = 0;
+
 if  hasSummaryTags(p)
+    categoricalFields = p.CategoricalFields;
     fMap = etc2fMap(p);
 else
     fprintf("No tag map found. Creating new tag map...\n");
@@ -99,13 +101,13 @@ end
         % field
         fMap = initializefMap(p);
         etcFields = getEtcFields(p);
-        eventFields = setdiff(getEventFields(p), etcFields);
+%         eventFields = setdiff(getEventFields(p), etcFields);
         for k = 1:length(etcFields)
             fMap = addEtcValues(p, fMap, etcFields{k});
         end
-        for k = 1:length(eventFields)
-            fMap = addEventValues(p, fMap, eventFields{k});
-        end
+%         for k = 1:length(eventFields)
+%             fMap = addEventValues(p, fMap, eventFields{k});
+%         end
     end % etc2fMap
 
     function fMap = initializefMap(p)
@@ -181,7 +183,7 @@ end
 
     function fMap = addEtcValues(p, fMap, eventField)
         % Adds the field values to the field maps from the .etc field
-        index = strcmpi({p.edata.etc.tags.map.field}, eventField);
+        index = strcmp({p.edata.etc.tags.map.field}, eventField);
         if isempty(p.edata.etc.tags.map(index).values)
             addEventValues(p, fMap, eventField);
         else
