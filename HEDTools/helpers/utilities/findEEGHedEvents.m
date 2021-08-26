@@ -11,7 +11,7 @@
 %
 %   EEG
 %                Input dataset. The dataset is assumed to be tagged and has
-%                a .usertags and/or .hedtags fields in the .event
+%                a .HED fields in the .event
 %                structure.
 %
 % queryString  

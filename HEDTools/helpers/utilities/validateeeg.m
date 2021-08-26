@@ -66,8 +66,7 @@ issues = validate(p);
 
     function issues = validate(p)
         % Validates the eeg structure
-        if isfield(p.EEG.event, 'usertags') || ...
-                isfield(p.EEG.event, 'hedtags')
+        if isfield(p.EEG.event, 'HED'))
             p.issues = parseeeg(p.hedXml, p.EEG.event, p.generateWarnings);
             p.issues = parseIssues(p.issues);
             issues = p.issues;
@@ -76,7 +75,7 @@ issues = validate(p);
             end
         else
             issues = '';
-            fprintf(['The usertags and hedtags fields do not exist in' ...
+            fprintf(['The HED field do not exist in' ...
                 ' the events. Please tag this dataset before' ...
                 ' running the validation.\n']);
         end

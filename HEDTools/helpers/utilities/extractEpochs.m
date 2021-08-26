@@ -1,6 +1,6 @@
 % This function will extract data epochs time locked to events that contain
 % specified HED tags. The HED tags are assumed to be stored in the
-% .event.usertags and/or .event.hedtags field of EEG structure passed in.
+% .event.HED field of EEG structure passed in.
 %
 % Usage:
 %
@@ -11,8 +11,8 @@
 %   EEG
 %                Input dataset. Data may already be epoched; in this case,
 %                extract (shorter) subepochs time locked to epoch events.
-%                The dataset is assumed to be tagged and has a .usertags
-%                and/or .hedtags fields in the .event structure.
+%                The dataset is assumed to be tagged and has a .HED
+%                fields in the .event structure.
 %
 %   mask  
 %                A logical array the length of hedStrings with true values

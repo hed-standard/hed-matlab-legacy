@@ -1,10 +1,10 @@
 function tMap = extracttags(events, valueField)
-% Extract a tagmap from the usertags in the event structure.
+% Extract a tagmap from the HED field in the event structure.
 parseArguments();
 tMap = tagMap();
 positions = arrayfun(@(x) ~isempty(x.(valueField)), events);
 values = {events(positions).(valueField)};
-tags = {events(positions).('usertags')};
+tags = {events(positions).('HED')};
 values = cellfun(@num2str, values, 'UniformOutput', false);
 uniqueValues = unique(cellfun(@num2str, values, 'UniformOutput', false));
 for k = 1:length(uniqueValues)

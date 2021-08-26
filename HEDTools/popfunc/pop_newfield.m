@@ -21,7 +21,7 @@
 %                    .event substructure to ignore during the tagging
 %                    process. By default the following subfields of the
 %                    .event structure are ignored: .latency, .epoch,
-%                    .urevent, .hedtags, and .usertags. The user can
+%                    .urevent, .HED. The user can
 %                    over-ride these tags using this name-value parameter.
 %
 %
@@ -125,7 +125,7 @@ com = sprintf('EEG = pop_newfield(EEG, %s, ''EventFieldsToIgnore'', %s', newFiel
         parser = inputParser;
         parser.addRequired('NewFieldName', @ischar);
         parser.addParamValue('EventFieldsToIgnore', ...
-            {'latency', 'epoch', 'urevent', 'hedtags', 'usertags'}, ...
+            {'latency', 'epoch', 'urevent', 'HED'}, ...
             @iscellstr);
         parser.parse(newFieldName, varargin{:});
         p = parser.Results;

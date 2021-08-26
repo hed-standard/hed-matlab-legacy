@@ -22,9 +22,9 @@
 %   Optional (key/value):
 %
 %   EventsTagField
-%                    The field name ('usertags' or 'hedtags') in the EEG
+%                    The field name ('HED') in the EEG
 %                    events structure to write the tab-separated tags to.
-%                    The default is 'usertags'.
+%                    The default is 'HED'.
 %
 %   EventsTagUpdateType
 %                    The update type ('merge' or 'replace') that determines
@@ -166,8 +166,8 @@ end
             isstruct(x) && isfield(x, 'event'));
         parser.addRequired('tsvfile', @(x) ~isempty(x) && ...
             ischar(tsvfile));
-        parser.addParamValue('EventsTagField', 'usertags', @(x) ...
-            any(validatestring(lower(x), {'hedtags', 'usertags'})));
+        parser.addParamValue('EventsTagField', 'HED', @(x) ...
+            any(validatestring(lower(x), {'HED'})));
         parser.addParamValue('EventsTagUpdateType', 'merge', ...
             @(x) any(validatestring(lower(x), {'merge', 'replace'})));
         parser.addParamValue('EventsTsvTagField', 'type', @(x) ...

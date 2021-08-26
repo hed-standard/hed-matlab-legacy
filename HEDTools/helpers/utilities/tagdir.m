@@ -37,7 +37,7 @@
 %                    .event substructure to ignore during the tagging
 %                    process. By default the following subfields of the
 %                    .event structure are ignored: .latency, .epoch,
-%                    .urevent, .hedtags, and .usertags. The user can
+%                    .urevent, .HED. The user can
 %                    over-ride these tags using this name-value parameter.
 %
 %   'PreserveTagPrefixes'
@@ -122,7 +122,7 @@ end
         parser.addParamValue('BaseMapFieldsToIgnore', {}, @iscellstr);  
         parser.addParamValue('DoSubDirs', true, @islogical);
         parser.addParamValue('EventFieldsToIgnore', ...
-            {'latency', 'epoch', 'urevent', 'hedtags', 'usertags'}, ...
+            {'latency', 'epoch', 'urevent', 'HED'}, ...
             @(x) (iscellstr(x)));
         parser.addParamValue('HedXml', which('HED.xml'), @ischar);
         parser.addParamValue('PreserveTagPrefixes', false, @islogical);

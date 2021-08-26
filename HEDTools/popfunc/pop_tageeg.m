@@ -40,7 +40,7 @@
 %                    .event substructure to ignore during the tagging
 %                    process. By default the following subfields of the
 %                    .event structure are ignored: .latency, .epoch,
-%                    .urevent, .hedtags, and .usertags. The user can
+%                    .urevent, .HED. The user can
 %                    over-ride these tags using this name-value parameter.
 %
 %   'FMapDescription'
@@ -103,8 +103,8 @@
 %
 %   EEG
 %                    The EEG dataset structure that has been tagged. The
-%                    tags will be written to the .usertags field under
-%                    the .event field.
+%                    tags will be written to the .tags field under
+%                    the .etc field.
 %
 %   fMap
 %                    A fieldMap object that stores all of the tags.
@@ -202,7 +202,7 @@ com = char(['pop_tageeg(' inputname(1) ', ' logical2str(p.UseGui) ...
         parser.addParamValue('BaseMap', '', @(x) isa(x, 'fieldMap') || ...
             ischar(x));
         parser.addParamValue('EventFieldsToIgnore', ...
-            {'latency', 'epoch', 'urevent', 'hedtags', 'usertags'}, ...
+            {'latency', 'epoch', 'urevent', 'HED'}, ...
             @iscellstr);
         parser.addParamValue('FMapDescription', '', @ischar);
         parser.addParamValue('FMapSaveFile', '', @(x)(isempty(x) || ...

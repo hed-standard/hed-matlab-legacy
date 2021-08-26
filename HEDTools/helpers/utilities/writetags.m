@@ -70,7 +70,7 @@ eData = writeSummaryTags(fMap, eData, tFields);
 
     function eData = writeIndividualTags(eData, fMap, eFields, ...
             preserveTagPrefixes)
-        % Write tags to individual events in usertags field (this needs to
+        % Write tags to individual events in HED field (this needs to
         % be optimized)
         for k = 1:length(eData.event)
             uTags = {};
@@ -79,7 +79,7 @@ eData = writeSummaryTags(fMap, eData, tFields);
                     num2str(eData.event(k).(eFields{l})));
                 uTags = mergetaglists(uTags, tags, preserveTagPrefixes);
             end
-            eData.event(k).usertags = sorttags(tagList.stringify(uTags));
+            eData.event(k).HED = sorttags(tagList.stringify(uTags));
         end
     end % writeIndividualTags
 
