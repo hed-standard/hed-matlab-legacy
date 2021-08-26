@@ -1,10 +1,11 @@
-% Creates a fieldMap object for the existing tags in a data structure.
+% Creates a fieldMap object from EEG structure with or without existing
+% tags.
 %
 % Usage:
 %
 %   >>  fMap = findtags(edata)
 %
-%   >>  fMap = findtags(edata, 'key1', 'value1', ...)
+%   >>  [fMap, canceled, categoricalFields] = findtags(edata, 'key1', 'value1', ...)
 %
 % Inputs:
 %
@@ -32,6 +33,18 @@
 %                    share prefixes are combined and only the most specific
 %                    is retained (e.g., /a/b/c and /a/b become just
 %                    /a/b/c). If true, then all unique tags are retained.
+%
+% Returns:
+%   fMap
+%                   fieldMap object containing fields and field levels and
+%                   potentially corresponding tags
+%   canceled
+%                   If user canceled the finding tag action, by cancelling
+%                   categorical field selection
+%   categoricalFields
+%                   Cell array of categorical fields in the event
+%                   structure. To be used by STUDY function so that
+%                   selection from one EEG can be applied to others
 %
 % Copyright (C) Kay Robbins and Thomas Rognon, UTSA, 2011-2013,
 % krobbins@cs.utsa.edu
@@ -114,19 +127,24 @@ end
         % categorical values. If it's a value field, it has one unique code
         % "HED"
         eventFields = getEventFields(p);
-        categoricalFields = {};
+        categoricalFields = getCategoricalFieldsUsingDefaultThreshold(p);
+        isMatched = cellfun(@(x) any(strcmp(categoricalFields,x)), eventFields);
         %% Defining GUI elements
         geometry = {[1] ...
                     [1] ...
-                    [1 1]};
+                    [1] ...
+                    [1 1] ...
+                    [1]};
         uilist = {...
-            {'Style', 'text', 'string', 'Select categorical fields:'} ...
-            {'Style', 'listbox', 'string', eventFields, 'tag', 'listboxCB', 'HorizontalAlignment','left', 'Max',2,'Min',0} ...
+            {'Style', 'text', 'string', 'Select categorical columns in the event structure:'}, ...
+            {'Style', 'text', 'string', '(use Ctrl/Cmd to multi-select)'},...
+            {'Style', 'listbox', 'string', eventFields, 'tag', 'listboxCB', 'HorizontalAlignment','left', 'Max',2,'Min',0, 'Value', find(isMatched)}, ...
             { 'style', 'pushbutton' , 'string', 'Cancel', 'tag', 'cancel', 'callback', @cancelCallback},...
-            { 'style', 'pushbutton' , 'string', 'Done', 'tag', 'ok', 'callback', @doneCallback}};
+            { 'style', 'pushbutton' , 'string', 'Continue', 'tag', 'ok', 'callback', @doneCallback},...
+            {'Style', 'text', 'string', '* Columns with less than 20 unique values are selected by default)'}};
 
         % Draw supergui
-        [~,~, handles] = supergui( 'geomhoriz', geometry, 'geomvert',[1 8 1], 'uilist', uilist, 'title', 'Select field to use for tagging -- pop_tageeg()');
+        [~,~, handles] = supergui( 'geomhoriz', geometry, 'geomvert',[1 1 8 1 1], 'uilist', uilist, 'title', 'Select field to use for tagging -- pop_tageeg()');
         figure_handle = get(handles{1},'parent');
         waitfor(figure_handle);                    
             
@@ -203,13 +221,44 @@ end
 %         end
         eventFields = setdiff(eventFields, p.EventFieldsToIgnore);
     end % getEventFields
+    function result  = getCategoricalFieldsUsingDefaultThreshold(p)
+        threshold = 20;
+        % Gets all of the event fields from the .event % and .urevent fields (deprecated)
+        result = {};
+        if isfield(p.edata, 'event') && isstruct(p.edata.event)
+            fields = fieldnames(p.edata.event);
+        end
+        for i=1:numel(fields)
+            uniqueValues = getUniqueFieldLevels(p.edata, fields{i});
+            if ~isempty(uniqueValues) && numel(uniqueValues) <= threshold
+                result = [result fields(i)];
+            end
+        end
+    end % getCategoricalFieldsUsingDefaultThreshold
 
     function etcFields = getEtcFields(p)
         % Gets all of the event fields from the .etc field
         etcFields = {p.edata.etc.tags.map.field};
         etcFields = setdiff(etcFields, p.EventFieldsToIgnore);
     end % getEtcFields
-    
+
+    function uniqueValues = getUniqueFieldLevels(EEG, field)
+        % parse field value array to make sure it's compatible with
+        % unique()
+        uniqueValues = [];
+        if isfield(EEG, 'event') && isfield(EEG.event, field)
+            if iscell(EEG.event(1).(field))
+                values = cellfun(@(x) x, [EEG.event.(field)], 'UniformOutput',false);
+            else
+                if isnumeric(EEG.event(1).(field))
+                    values = [EEG.event.(field)];
+                else
+                    values = {EEG.event.(field)};
+                end
+            end
+            uniqueValues = unique(values);
+        end
+    end
     
     function p = parseArguments(edata, varargin)
         % Parses the input arguments and returns the results
