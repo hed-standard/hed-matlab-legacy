@@ -420,7 +420,8 @@ classdef tagList < hgsetget
             if isempty(tlist)
                 errormsg = 'input is empty';
             elseif ~iscell(tlist)
-                errormsg = 'input is not cell array';
+%                 errormsg = 'input is not cell array';
+                tlist = {tlist};
             else
                 [tstring, errormsg] = tagList.stringifyElement(tlist{1});
                 if ~isempty(errormsg)
