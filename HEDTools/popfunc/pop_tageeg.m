@@ -183,7 +183,7 @@ if p.UseGui
     
     % Write tags to EEG
     fprintf('Saving tags... ');
-    EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes); 
+    EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes, 'WriteIndividualTags', false); 
     fprintf('Done.\n');
 else % Call function without menu %if nargin > 1 && ~p.UseGui
     % extract tag map from EEG. If none exists, create a new empty fMap
