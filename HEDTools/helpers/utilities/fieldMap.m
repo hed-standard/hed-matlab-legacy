@@ -349,6 +349,70 @@ classdef fieldMap < hgsetget
             end
         end
         
+        function fMap = createfMapFromJson(jsonFile)
+            % Create a fieldMap from the json sidecar, complying with BIDS
+            % events.json HED annotation
+            
+            % parse file
+            if ~endsWith(jsonFile,'.json')
+                error('Not a json file');
+            end
+            try
+                json = fileread(jsonFile);
+            catch
+                error('Error reading json file %s', jsonFile);
+            end
+            % construct fMapStruct from json
+            jsonStruct = jsondecode(json);
+            fields = fieldnames(jsonStruct);
+
+            fMapStruct.description = 'fieldMap generated from json file';
+            fMapStruct.xml = 'HEDLatest.xml';
+            maps = [];
+            for i=1:numel(fields)
+                map = [];
+                map.field = fields{i};
+                if ~isfield(jsonStruct.(fields{i}), 'HED') && ~isfield(jsonStruct.(fields{i}), 'Levels')
+                    map.values.code = 'HED';
+                    map.values.tags = {};
+                else
+                    tagmaps = [];
+                    if isfield(jsonStruct.(fields{i}), 'Levels')
+                        levels = fieldnames(jsonStruct.(fields{i}).Levels);
+                        for l=1:numel(levels)
+                            tagmap = [];
+                            tagmap.code = levels{l};
+                            if isfield(jsonStruct.(fields{i}), 'HED') && isfield(jsonStruct.(fields{i}).HED, levels{l})
+                                tagmap.tags = tagList.deStringify(jsonStruct.(fields{i}).HED.(levels{l}));
+                            else
+                                tagmap.tags = {};
+                            end
+                            tagmaps = [tagmaps tagmap];
+                        end
+                    else % don't have Levels but have HED
+                        if isstruct(jsonStruct.(fields{i}).HED)
+                            levels = fieldnames(jsonStruct.(fields{i}).HED);
+                            for l=1:numel(levels)
+                                tagmap = [];
+                                tagmap.code = levels{l};
+                                tagmap.tags = tagList.deStringify(jsonStruct.(fields{i}).HED.(levels{l}));
+                                tagmaps = [tagmaps tagmap];
+                            end
+                        else
+                            map.values.code = 'HED';
+                            map.values.tags = jsonStruct.(fields{i}).HED;
+                        end
+                    end
+                    map.values = tagmaps;
+                end 
+                maps = [maps map];
+            end
+            fMapStruct.map = maps;
+            
+            % create fMap from fMapStruct
+            fMap = fieldMap.createfMapFromStruct(fMapStruct);
+        end
+        
         function baseTags = loadFieldMap(tagsFile)
             % Load a field map from a .mat file that contains a fieldMap
             % object.
@@ -356,7 +420,7 @@ classdef fieldMap < hgsetget
             try
                 t = load(tagsFile);
                 tFields = fieldnames(t);
-                for k = 1:length(tFields);
+                for k = 1:length(tFields)
                     nextField = t.(tFields{k});
                     if isa(nextField, 'fieldMap')
                         baseTags = nextField;
