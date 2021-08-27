@@ -399,8 +399,8 @@ classdef fieldMap < hgsetget
                                 tagmaps = [tagmaps tagmap];
                             end
                         else
-                            map.values.code = 'HED';
-                            map.values.tags = jsonStruct.(fields{i}).HED;
+                            tagmaps.code = 'HED';
+                            tagmaps.tags = tagList.deStringify(jsonStruct.(fields{i}).HED);
                         end
                     end
                     map.values = tagmaps;
