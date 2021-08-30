@@ -4,6 +4,7 @@
 NAME="HEDTools$1"
 echo $NAME
 cp -r ./HEDTools $NAME
+rm -rf ./$NAME/tests/
 zip -r "$NAME.zip" $NAME
 rm -rf ./$NAME
 mv ./"$NAME.zip" ./EEGLABPlugin

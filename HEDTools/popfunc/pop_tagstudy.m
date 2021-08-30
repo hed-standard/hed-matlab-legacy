@@ -154,8 +154,11 @@ inputArgs = getkeyvalue({'BaseMap', 'HedXml', 'PreserveTagPrefixes', 'EventField
 fprintf('Begin tagging...\n');
 if p.UseGui    
     % Create fMap from EEG.event of each EEG set in ALLEEG.
-    fMap = findStudyTags(STUDY, ALLEEG);
-    
+    [fMap, canceled] = findStudyTags(STUDY, ALLEEG);
+    if canceled
+        fprintf('Tagging was canceled\n');
+        return;
+    end
     % If a base map is provided, merge it with the fMap
     if isfield(p,'BaseMap')
         fMap = mergeBaseTags(fMap, p.BaseMap);
@@ -215,7 +218,7 @@ if p.UseGui
     saveheddatasetsOutputArgs = {'OverwriteDatasets', true};
 %     if overwriteDatasets
         for i=1:length(ALLEEG)
-           pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(k).filepath); 
+           pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(i).filepath); 
         end
 %     end
     
