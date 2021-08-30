@@ -1,4 +1,5 @@
 function [STUDY,ALLEEG,fMap] = removeTagsSTUDY(STUDY,ALLEEG)
+    fprintf('Clearing STUDY tags... \n');
     fMap = fieldMap();
     if hasSummaryTags(STUDY)
         fMap = fieldMap.createfMapFromStruct(STUDY.etc.tags);
@@ -10,9 +11,8 @@ function [STUDY,ALLEEG,fMap] = removeTagsSTUDY(STUDY,ALLEEG)
         ALLEEG(i) = EEGTemp;
         fMap.merge(fMapEEG, 'Merge', {},{});
         pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(i).filepath); 
-    end
-
-    
+    end    
+    fprintf('Done.\n')
     function summaryFound = hasSummaryTags(STUDY)
         % Returns true if there are summary tags found in the .etc field
         summaryFound = isfield(STUDY, 'etc') && ...
