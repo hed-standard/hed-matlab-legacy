@@ -31,7 +31,9 @@
 %   Optional (key/value):
 %
 %   'BaseMap'
-%                    A fieldMap object or the name of a file that contains
+%                    A json file containing HED annotation 
+%                    (see https://bids-specification.readthedocs.io/en/stable/99-appendices/03-hed.html#annotating-events-by-categories)
+%                    or fieldMap object or the name of a file that contains
 %                    a fieldMap object to be used to initialize tag
 %                    information.
 %
@@ -199,7 +201,7 @@ else % Call function without menu %if nargin > 1 && ~p.UseGui
         end
         % Write tags to EEG
         fprintf('Saving tags... ');
-        EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes); 
+        EEG = writetags(EEG, fMap, 'PreserveTagPrefixes', p.PreserveTagPrefixes, 'WriteIndividualTags', false); 
         fprintf('Done.\n');
     end
 end
