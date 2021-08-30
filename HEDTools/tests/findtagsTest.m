@@ -67,7 +67,7 @@ end
 
 function testRecoverTagging(testCase)
 fprintf('When EEG has .etc.tags, create corresponding fMap\n');
-dTags = findtags(testCase.TestData.EEGtagged);
+[dTags, canceled, categoricalFields] = findtags(testCase.TestData.EEGtagged);
 events = dTags.getMaps();
 testCase.verifyEqual(length(events), 2);
 testCase.verifyTrue(~isempty(dTags.getXml()));
@@ -107,7 +107,7 @@ function testEmpty(testCase)
 % verify the EEG doesn't contain etc.tags
 testCase.verifyTrue(~isfield(testCase.TestData.EEG.etc, 'tags'));
 % categorical field selection window should show up
-dTags = findtags(testCase.TestData.EEG);
+[dTags, canceled, categoricalFields] = findtags(testCase.TestData.EEG);
 fprintf(['If both are categorical \n']);
 % if no modification, there will be two categorical fields 'position' and 'type', 
 % each containing two field levels, in the returned fMap
@@ -125,7 +125,7 @@ testCase.verifyEqual(length(fieldTagMap.values),2);
 
 fprintf(['If one field is value field \n']);
 % only type is selected, 'position' will have one field level 'HED' in the returned fMap
-dTags = findtags(testCase.TestData.EEG);
+[dTags, canceled, categoricalFields] = findtags(testCase.TestData.EEG);
 events = dTags.getMaps();
 fieldTagMap = events{1}.getStruct();
 testCase.verifyTrue(strcmpi(fieldTagMap.field, 'position'));

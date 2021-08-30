@@ -4,18 +4,40 @@ end % pop_tageegTest
 
 function setupOnce(testCase)
 setup_tests;
-latestHed = 'HED.xml';
-testCase.TestData.data.etc.tags.xml = fileread(latestHed);
-load([testCase.TestData.testroot filesep testCase.TestData.Otherdir filesep 'EEGEpoch.mat']);
-testCase.TestData.EEGEpoch = EEGEpoch;
 end
 
-function test_loadCTagger()
-    % EEG contains etc.tags
+function test_noguitagging(testCase)
+    % test using pop_tageeg with nogui option
+    % no base map provided. Return skeleton fMap
+    [EEG, fMap] = pop_tageeg(testCase.TestData.EEG);
+    % result is similar to using findTags, but with etc.tags in EEG
+    % structure
+    events = fMap.getMaps();
+    testCase.verifyEqual(length(events), 2);
+    testCase.verifyTrue(~isempty(dTags.getXml()));
+    fields = dTags.getFields();
+    testCase.verifyEqual(length(fields), 2);
+    testCase.verifyTrue(strcmpi(fields{1}, 'position'));
+    testCase.verifyTrue(strcmpi(fields{2}, 'type'));
+    fieldTagMap = events{1}.getStruct();
+    testCase.verifyEqual(length(fieldTagMap.values),2);
+    fieldTagMap = events{2}.getStruct();
+    testCase.verifyEqual(length(fieldTagMap.values),2);
     
-    % EEG contains event.HED but no etc.tags (importing from BIDS tsv)
-    
+    testCase.verifyTrue(isfield(EEG.etc, 'tags'));
+    events = EEG.etc.tags;
+    testCase.verifyEqual(length(events), 2);
+    testCase.verifyTrue(~isempty(dTags.getXml()));
+    fields = dTags.getFields();
+    testCase.verifyEqual(length(fields), 2);
+    testCase.verifyTrue(strcmpi(fields{1}, 'position'));
+    testCase.verifyTrue(strcmpi(fields{2}, 'type'));
+    fieldTagMap = events{1}.getStruct();
+    testCase.verifyEqual(length(fieldTagMap.values),2);
+    fieldTagMap = events{2}.getStruct();
+    testCase.verifyEqual(length(fieldTagMap.values),2);
 end
+
 function test_valid(testCase)
 % Unit test for pop_tageeg
 fprintf('Testing pop_tageeg....REQUIRES USER INPUT\n');
