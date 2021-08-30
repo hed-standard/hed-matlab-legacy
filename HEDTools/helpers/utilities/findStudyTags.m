@@ -1,14 +1,18 @@
 function [fMap, canceled] = findStudyTags(STUDY, ALLEEG, varargin)
 p = parseArguments(varargin{:});
 canceled = 0;
-
+fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
+categoricalFields = {};
 if hasSummaryTags(STUDY)
-    fMap = etc2fMap(STUDY, p);
-else
-    fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
+    % get fMap from STUDY struct
+    [fMapTemp, categoricalFields] = etc2fMap(STUDY, p);
+    fMap.merge(fMapTemp, 'Merge', p.EventFieldsToIgnore, {});
+end
+    % get fMap from individual EEG and merge tags
+    
     % Find the existing tags from the study datasets
 %             studyFields = {};
-    categoricalFields = {};
+
     for k = 1:length(ALLEEG) % Assemble the list
 %                 studyFields = union(studyFields, fieldnames(ALLEEG(k).event));
         [fMapTemp, canceled, categoricalFields] = findtags(ALLEEG(k), 'PreserveTagPrefixes', ...
@@ -20,15 +24,21 @@ else
             return
         end
     end
-end
+% end
     
-    function fMap = etc2fMap(STUDY, p)
+    function [fMap, categoricalFields] = etc2fMap(STUDY, p)
+        valueFields = {};
         % Adds field values to the field maps from the .etc field
         fMap = fieldMap('PreserveTagPrefixes',  p.PreserveTagPrefixes);
         etcFields = getEtcFields(STUDY, p);
         for i = 1:length(etcFields)
             fMap.addValues(etcFields{i}, STUDY.etc.tags.map(i).values);
+            codes = {STUDY.etc.tags.map(i).values.code};
+            if length(codes) == 1 && strcmp(codes, "HED")
+                valueFields = [valueFields, etcFields{i}];
+            end
         end
+        categoricalFields = setdiff(etcFields, valueFields);
     end % etc2fMap
     
     function summaryFound = hasSummaryTags(STUDY)
