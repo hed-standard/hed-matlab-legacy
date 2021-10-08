@@ -130,6 +130,16 @@ classdef tagList < hgsetget
             tags = obj.Tags.values;
         end % getTags
         
+        function result = hasAnnotation(obj)
+            % check if there's HED annotation associated with this tagList
+            % by checking whether its Tags value is empty
+            if ~isempty(obj.getTags)
+                result = true;
+            else
+                result = false;
+            end
+        end % hasAnnotation
+        
         function keysRemoved = intersect(obj, newList)
             % Keep only the keys that are in this tagList and in the other
             % tagList

@@ -213,6 +213,22 @@ classdef tagMap < hgsetget
             end
         end % getValueStruct
         
+        function result = hasAnnotation(obj)
+            % check if there's any HED annotation associated with this
+            % tagMap by checking all of its tagList
+            result = false;
+            tLists = obj.getValues();
+            if ~isempty(tLists)
+                for i=1:numel(tLists)
+                    tList = tLists{i};
+                    if tList.hasAnnotation()
+                        result = true;
+                        return
+                    end
+                end
+            end
+        end % isEmpty
+        
         function merge(obj, mTags, updateType, preservePrefix)
             % Combine the tagMap object info with this one
             if isempty(mTags)
