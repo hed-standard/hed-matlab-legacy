@@ -1,16 +1,16 @@
-function [STUDY,ALLEEG,fMap] = removeTagsSTUDY(STUDY,ALLEEG)
+function [STUDY,EEG,fMap] = removeTagsSTUDY(STUDY,EEG)
     fprintf('Clearing STUDY tags... \n');
     fMap = fieldMap();
     if hasSummaryTags(STUDY)
         fMap = fieldMap.createfMapFromStruct(STUDY.etc.tags);
         STUDY.etc = rmfield(STUDY.etc, 'tags');
     end
-    for i=1:length(ALLEEG)
-        EEGTemp = ALLEEG(i);
+    for i=1:length(EEG)
+        EEGTemp = EEG(i);
         [EEGTemp, fMapEEG] = removeTagsEEG(EEGTemp);
-        ALLEEG(i) = EEGTemp;
+        EEG(i) = EEGTemp;
         fMap.merge(fMapEEG, 'Merge', {},{});
-        pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(i).filepath); 
+        pop_saveset(EEG(i), 'filename', EEG(i).filename, 'filepath', EEG(i).filepath); 
     end    
     fprintf('Done.\n')
     function summaryFound = hasSummaryTags(STUDY)
