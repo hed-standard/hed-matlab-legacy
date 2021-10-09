@@ -71,7 +71,7 @@ if  hasSummaryTags(p)
     categoricalFields = p.CategoricalFields;
     fMap = etc2fMap(p);
 else
-    fprintf("No tag map found. Creating new tag map...\n");
+    fprintf("No tag map found in EEG.etc. Automatically extract tag map from EEG.event.HED if field exists...\n");
     fMap = events2fMap(p);
 end
 
@@ -166,10 +166,10 @@ end
         % Creates and populates the field maps from the .event and
         % .urevent fields (deprecated)
         fMap = initializefMap(p);
+        eventFields = getEventFields(p);
         if isempty(p.CategoricalFields)
-            [eventFields, categoricalFields] = selectCategoricalFields(p);
+            categoricalFields = eventFields;
         else
-            eventFields = getEventFields(p);
             categoricalFields = p.CategoricalFields;
         end
         for k = 1:length(eventFields)

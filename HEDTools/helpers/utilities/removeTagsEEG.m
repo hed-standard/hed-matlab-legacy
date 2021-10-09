@@ -4,7 +4,8 @@ function [EEG,fMap] = removeTagsEEG(EEG)
     if hasSummaryTags(EEG)
         fMap = fieldMap.createfMapFromStruct(EEG.etc.tags);
         EEG.etc = rmfield(EEG.etc, 'tags');
-    elseif isfield(EEG.event, 'HED')
+    end
+    if isfield(EEG.event, 'HED')
         fMap = findtags(EEG);
         EEG = pop_editeventfield(EEG, 'HED', []);
     end
