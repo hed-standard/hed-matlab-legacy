@@ -43,13 +43,13 @@ classdef tagList < hgsetget
         
         function errormsg = add(obj, value)
             % Add valid tag or tag group to this tagList
-            errormsg = tagList.validate(value);
+            errormsg = '';%tagList.validate(value);
             if ~isempty(errormsg)
                 return;
             end
-            value = tagList.getCanonical(value);
+            %value = tagList.getCanonical(value);
             [tstring, errormsg] = tagList.stringify({value});
-            if isempty(errormsg) && ~obj.Tags.isKey(tstring);
+            if isempty(errormsg) && ~obj.Tags.isKey(tstring)
                 obj.Tags(tstring) = value;
             end
         end  % add
@@ -218,40 +218,99 @@ classdef tagList < hgsetget
     end % public methods
     
     methods(Static = true)
-        
-        function [tlist, errormsg] = deStringify(tstring)
-            % Create a cell array representing a comma-separated string of
-            % tags
-            tlist = {};
+        function [res,errormsg] = deStringify(tstring)
+            res = deStringify_helper({},tstring);
             errormsg = '';
-            if isempty(tstring) || ~ischar(tstring)
-                errormsg = 'input empty or not a string';
-                return;
-            end
-            try
-                tlist = regexpi(tstring, ',(?![^\(]*\))', 'split');
-                % Remove empty cells
-                tlist = tlist(~cellfun('isempty', strtrim(tlist)));
-                for k = 1:length(tlist)
-                    if ~isempty(regexpi(tlist{k}, '^\s*\(', 'once'))
-                        tlist{k} = regexprep(tlist{k}, '[\(\)]', '');
-                        tlist{k} = regexpi(tlist{k}, ...
-                            ',', 'split');
-                        if any(~cellfun(@isempty, strfind(tlist{k}, '~')))
-                            tlist{k} = ...
-                                tagList.splitTildesInGroup(tlist{k});
+            function res = deStringify_helper(res, tstring)
+                currRes = {};
+                if ~isempty(tstring)
+                    [idx,isTagGroup] = getFirstTagOrTagGroup(tstring);
+                    if ~isTagGroup
+                        currRes{1} = tstring(1:idx); %substring;
+                    else
+                        currRes{1} = deStringify_helper(res,stripParen(tstring(1:idx)));
+                    end
+                    res = [res currRes deStringify_helper(res,stripComma(tstring(idx+1:end)))];
+                else 
+                    res = [res currRes];
+                end 
+            
+            end % deStringify_helper 
+            function [endIdx, isTagGroup] = getFirstTagOrTagGroup(str)
+                isTagGroup = false;
+                endIdx = length(str);
+                if ~isempty(str)
+                    str = stripComma(str);
+
+                    if strcmp(str(1),'(')
+                        isTagGroup = true;
+                        stack = {'('};
+                        currIdx = 2;
+                        while ~isempty(stack) && currIdx <= length(str)
+                            if strcmp(str(currIdx),'(')
+                                stack = [stack {'('}];
+                            elseif strcmp(str(currIdx),')')
+                                stack = stack(1:end-1);
+                            end
+                            currIdx = currIdx + 1;
+                        end
+                        %str = str(1:currIdx-1);
+                        endIdx = currIdx-1;
+                    else
+                        comma_idx = strfind(str,',');
+                        if ~isempty(comma_idx)
+                            % has more string
+        %                     str = str(1:comma_idx(1)-1);
+                            endIdx = comma_idx(1)-1;
                         end
                     end
-                    tlist{k} = strtrim(tlist{k});
-                    msg = tagList.validate(tlist{k});
-                    if ~isempty(msg)
-                        errormsg = [errormsg '[' msg ']']; %#ok<AGROW>
-                    end
                 end
-            catch mex
-                errormsg = [errormsg '[' mex.message ']'];
+            end
+            function str = stripParen(origStr)
+                str = strip(origStr);
+                str = regexp(str,'(?<=^\()(.*)(?=\)$)','match');
+                if ~isempty(str)
+                    str = str{1};
+                end
+            end
+            function str = stripComma(str)
+                str = strip(strip(strip(str),','));
             end
         end % deStringify
+
+%         function [tlist, errormsg] = deStringify(tstring)
+%             % Create a cell array representing a comma-separated string of
+%             % tags
+%             tlist = {};
+%             errormsg = '';
+%             if isempty(tstring) || ~ischar(tstring)
+%                 errormsg = 'input empty or not a string';
+%                 return;
+%             end
+%             try
+%                 tlist = regexpi(tstring, ',(?![^\(]*\))', 'split');
+%                 % Remove empty cells
+%                 tlist = tlist(~cellfun('isempty', strtrim(tlist)));
+%                 for k = 1:length(tlist)
+%                     if ~isempty(regexpi(tlist{k}, '^\s*\(', 'once'))
+%                         tlist{k} = regexprep(tlist{k}, '[\(\)]', '');
+%                         tlist{k} = regexpi(tlist{k}, ...
+%                             ',', 'split');
+%                         if any(~cellfun(@isempty, strfind(tlist{k}, '~')))
+%                             tlist{k} = ...
+%                                 tagList.splitTildesInGroup(tlist{k});
+%                         end
+%                     end
+%                     tlist{k} = strtrim(tlist{k});
+%                     msg = tagList.validate(tlist{k});
+%                     if ~isempty(msg)
+%                         errormsg = [errormsg '[' msg ']']; %#ok<AGROW>
+%                     end
+%                 end
+%             catch mex
+%                 errormsg = [errormsg '[' mex.message ']'];
+%             end
+%         end % deStringify
         
         function tsorted = getCanonical(tgroup)
             % Returns a sorted version of a valid tag or tag group
@@ -429,79 +488,90 @@ classdef tagList < hgsetget
             tstring = '';
             if isempty(tlist)
                 errormsg = 'input is empty';
-            elseif ~iscell(tlist)
-%                 errormsg = 'input is not cell array';
-                tlist = {tlist};
+            elseif ~iscell(tlist) && ~ischar(tlist)
+                errormsg = 'input is not cell array nor string';
             else
-                [tstring, errormsg] = tagList.stringifyElement(tlist{1});
-                if ~isempty(errormsg)
-                    return;
+                if ischar(tlist)
+                    tlist = {tlist};
                 end
-                for k = 2:length(tlist)
-                    [tnext, errormsg] = tagList.stringifyElement(tlist{k});
-                    if ~isempty( errormsg)
-                        return;
-                        
-                    end
-                    tstring = [tstring ',' tnext]; %#ok<AGROW>
-                end
+                tstring = jsonencode(tlist);
+                tstring = strrep(strrep(tstring,'[','('),']',')');
+                %tstring = strip(strip(tstring,'('),')');
+                tstring = strrep(tstring,'"','');
+                tstring = tstring(2:end-1);
+                errormsg = '';
+%                 [tstring, errormsg] = tagList.stringifyElement(tlist{1});
+%                 if ~isempty(errormsg)
+%                     return;
+%                 end
+%                 for k = 2:length(tlist)
+%                     [tnext, errormsg] = tagList.stringifyElement(tlist{k});
+%                     if ~isempty( errormsg)
+%                         return;
+%                         
+%                     end
+%                     tstring = [tstring ',' tnext]; %#ok<AGROW>
+%                 end
             end
         end  % stringify
         
-        function [tstring, errormsg] = stringifyElement(telement)
-            % Create a string from cellstr or from string
-            tstring = '';
-            errormsg = '';
-            if isempty(telement)
-                errormsg = 'element is empty';
-            elseif ischar(telement)
-                tstring = strtrim(telement);
-            elseif iscellstr(telement)
-                tstring = ['(' strtrim(telement{1})];
-                for k = 2:length(telement)
-                    tstring = [tstring ',' ...
-                        strtrim(telement{k})]; %#ok<AGROW>
-                end
-                tstring = [tstring ')'];
-            else
-                errormsg = 'element is not string or cellstr';
-            end
-        end  % stringifyElement
+%         function [tstring, errormsg] = stringifyElement(telement)
+%             % Create a string from cellstr or from string
+%             tstring = '';
+%             errormsg = '';
+%             if isempty(telement)
+%                 errormsg = 'element is empty';
+%             elseif ischar(telement)
+%                 tstring = strtrim(telement);
+%             elseif iscellstr(telement)
+%                 tstring = ['(' strtrim(telement{1})];
+%                 for k = 2:length(telement)
+%                     tstring = [tstring ',' ...
+%                         strtrim(telement{k})]; %#ok<AGROW>
+%                 end
+%                 tstring = [tstring ')'];
+%             else
+%                 errormsg = 'element is not string or cellstr';
+%             end
+%         end  % stringifyElement
         
         function eJson = tagList2Json(value)
             % Convert a tagList to a JSON string
-            tags = value.getTags();
-            code = value.getCode();
-            if isempty(tags)
-                tagString = '';
-            elseif ischar(tags)
-                tagString = ['["' tags '"]'];
-            else
-                tagString = '';
-                for j = 1:length(tags)
-                    if ischar(tags{j})
-                        tagString = ...
-                            [tagString ',' '["' tags{j} '"]']; %#ok<AGROW>
-                    else
-                        tagGroup = tags{j};
-                        tagGroupString = '';
-                        for k = 1:length(tagGroup)
-                            tagGroupString = ...
-                                [tagGroupString ',' '"' ...
-                                tagGroup{k} '"']; %#ok<AGROW>
-                        end
-                        tagGroupString = ...
-                            regexprep(tagGroupString,',','', 'once');
-                        tagString = ...
-                            [tagString ',' '[' ...
-                            tagGroupString ']']; %#ok<AGROW>
-                    end
-                end
-                tagString = regexprep(tagString,',','', 'once');
-            end
-            tagString = ['[' tagString ']'];
-            eJson = ['{"code":"' code, ...
-                '","tags":' tagString '}'];
+            res.code = value.getCode();
+            res.tags = value.getTags();
+            eJson = jsonencode(res);
+%             tags = value.getTags();
+%             code = value.getCode();
+%             if isempty(tags)
+%                 tagString = '';
+%             elseif ischar(tags)
+%                 tagString = ['["' tags '"]'];
+%             else
+%                 tagString = '';
+%                 for j = 1:length(tags)
+%                     if ischar(tags{j})
+%                         tagString = ...
+%                             [tagString ',' '["' tags{j} '"]']; %#ok<AGROW>
+%                     else
+%                         tagGroup = tags{j};
+%                         tagGroupString = '';
+%                         for k = 1:length(tagGroup)
+%                             tagGroupString = ...
+%                                 [tagGroupString ',' '"' ...
+%                                 tagGroup{k} '"']; %#ok<AGROW>
+%                         end
+%                         tagGroupString = ...
+%                             regexprep(tagGroupString,',','', 'once');
+%                         tagString = ...
+%                             [tagString ',' '[' ...
+%                             tagGroupString ']']; %#ok<AGROW>
+%                     end
+%                 end
+%                 tagString = regexprep(tagString,',','', 'once');
+%             end
+%             tagString = ['[' tagString ']'];
+%             eJson = ['{"code":"' code, ...
+%                 '","tags":' tagString '}'];
         end % tagList2Json
         
         function errormsg = validate(itag)

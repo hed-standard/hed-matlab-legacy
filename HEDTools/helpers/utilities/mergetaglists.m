@@ -134,10 +134,11 @@ end
         for k = 1:length(tList)
             if ~isempty(tList{k})
                 item = strtrim(tList{k});
-                itemKey = lower(item);
-                if iscellstr(itemKey)
-                    itemKey = ['(',strjoin(itemKey,','),')'];
-                end
+                itemKey = lower(tagList.stringify(item));
+                %itemKey = lower(item);
+%                 if iscellstr(itemKey)
+%                     itemKey = ['(',strjoin(itemKey,','),')'];
+%                 end
                 if ~myMap.isKey(itemKey) && ~isempty(itemKey)
                     myMap(itemKey) = item;
                 end
