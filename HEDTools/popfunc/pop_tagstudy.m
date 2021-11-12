@@ -8,7 +8,7 @@
 %
 % Usage:
 %
-%   >>  [STUDY, ALLEEG, fMap, com] = pop_tagstudy(STUDY, ALLEEG, 'key1', value1 ...)
+%   >>  [STUDY, EEG, fMap, com] = pop_tagstudy(STUDY, EEG, 'key1', value1 ...)
 %
 % Input:
 %
@@ -17,7 +17,7 @@
 %   STUDY
 %                    An EEGLAB STUDY structure
 %
-%   ALLEEG
+%   EEG
 %                    Structure array containing info of all datasets of a STUDY 
 %
 %   Optional (key/value):
@@ -104,7 +104,7 @@
 %
 %   STUDY
 %                    
-%   ALLEEG
+%   EEG
 %                    Structure array containing all datasets of the STUDY
 %                    with HED tags
 %
@@ -136,7 +136,7 @@
 % along with this program; if not, write to the Free Software
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  
-function [STUDY, ALLEEG, fMap, com] = pop_tagstudy(STUDY, ALLEEG, varargin)
+function [STUDY, EEG, fMap, com] = pop_tagstudy(STUDY, EEG, varargin)
 
 if nargin < 1
     help pop_tagstudy;
@@ -153,8 +153,8 @@ inputArgs = getkeyvalue({'BaseMap', 'HedXml', 'PreserveTagPrefixes', 'EventField
 % Call function with menu
 fprintf('Begin tagging...\n');
 if p.UseGui    
-    % Create fMap from EEG.event of each EEG set in ALLEEG.
-    [fMap, canceled] = findStudyTags(STUDY, ALLEEG);
+    % Create fMap from EEG.event of each EEG set in EEG.
+    [fMap, canceled] = findStudyTags(STUDY, EEG);
     if canceled
         fprintf('Tagging was canceled\n');
         return;
@@ -178,8 +178,8 @@ if p.UseGui
     % Write tag map to STUDY
     STUDY = writetags(STUDY, fMap, 'WriteIndividualTags', false);
     % Write tag map to each dataset
-    for k = 1:length(ALLEEG)
-	    ALLEEG(k) = writetags(ALLEEG(k), fMap, 'PreserveTagPrefixes', ...
+    for k = 1:length(EEG)
+	    EEG(k) = writetags(EEG(k), fMap, 'PreserveTagPrefixes', ...
            p.PreserveTagPrefixes, 'WriteIndividualTags', false);
     end
     fprintf('Done.\n');
@@ -197,39 +197,36 @@ if p.UseGui
             'WriteSeparateUserHedFile', writeSeparateUserHedFile};
         inputArgs = [inputArgs savehedOutputArgs];
     end
-    
-%     % Save field map containing tags
-%     savefmapInputArgs = getkeyvalue({'FMapDescription', ...
-%         'FMapSaveFile', 'WriteFMapToFile'}, varargin{:});
-%     [fMap, fMapDescription, fMapSaveFile] = ...
-%         pop_savefmap(fMap, savefmapInputArgs{:});
-%     savefmapOutputArgs = {'FMapDescription', fMapDescription, ...
-%         'FMapSaveFile', fMapSaveFile};
-    
-%     % Save datasets
-%     answer = questdlg2('Do you want to overwrite the original datasets to include the HED tags?','Save datasets');
-%     if strcmp(answer,'Yes')
-%         overwriteDatasets = true;
-%     else
-%         overwriteDatasets = false;
-%     end
-%     overwriteDatasets = true;
-%     saveheddatasetsOutputArgs = {'OverwriteDatasets', overwriteDatasets};
-    saveheddatasetsOutputArgs = {'OverwriteDatasets', true};
-%     if overwriteDatasets
-        for i=1:length(ALLEEG)
-           pop_saveset(ALLEEG(i), 'filename', ALLEEG(i).filename, 'filepath', ALLEEG(i).filepath); 
+
+    % if there's bids-matlab-tools and if there's BIDS.eventInfoDesc in
+    % STUDY then prompt user to update HED tags in there as well
+    if isfield(STUDY,'BIDS') && isfield(STUDY.BIDS,'eInfoDesc') && isfield(STUDY.BIDS,'eInfo') && exist('pop_eventinfo', 'file') == 2
+        uilist = { ...
+            { 'Style', 'text', 'string', 'BIDS event information found in the STUDY', 'fontweight', 'bold'  }, ...
+            { 'Style', 'text', 'string', 'Would you like to update it with HED?'}, ...
+            };
+        geometry = { [1] [1]};
+        geomvert =   [1  1 ];
+        [~,~,isOk,~] = inputgui( 'geometry', geometry, 'geomvert', geomvert, 'uilist', uilist, 'title', 'Warning');
+        if isempty(isOk)
+            disp('HED annotation not added to BIDS event info\n')
+        else
+            [EEG, STUDY,~] = pop_eventinfo(EEG,STUDY,'default');
+            disp('HED annotation added to BIDS event info')
         end
-%     end
-    
+    end
+        
+    saveheddatasetsOutputArgs = {'OverwriteDatasets', true};
+    for i=1:length(EEG)
+       pop_saveset(EEG(i), 'filename', EEG(i).filename, 'filepath', EEG(i).filepath); 
+    end
     % Build command string
-%     inputArgs = [inputArgs savefmapOutputArgs saveheddatasetsOutputArgs];
     inputArgs = [inputArgs saveheddatasetsOutputArgs];
 else % Call function without menu  % nargin > 1 && ~p.UseGui
     inputArgs = getkeyvalue({'BaseMap', 'DoSubDirs', ...
         'EventFieldsToIgnore', 'HedXml', 'PreserveTagPrefixes'}, ...
         varargin{:});
-    fMap = tagstudy(ALLEEG, inputArgs{:});
+    fMap = tagstudy(EEG, inputArgs{:});
 end
 
 fprintf('Tagging completed.\n');
