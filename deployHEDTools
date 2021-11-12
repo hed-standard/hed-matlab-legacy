@@ -1,10 +1,13 @@
 #!/bin/bash
 # Deploy script for HEDTools
 # Copy the matlab folder into a folder named HEDTools[version_number] and create zip file and put it in the EEGLABPlugin folder
+# Usage:
+# 	./deployhedtools 3.1.0
 NAME="HEDTools$1"
 echo $NAME
 cp -r ./HEDTools $NAME
 rm -rf ./$NAME/tests/
 zip -r "$NAME.zip" $NAME
 rm -rf ./$NAME
+rm ./EEGLABPlugin/*
 mv ./"$NAME.zip" ./EEGLABPlugin
