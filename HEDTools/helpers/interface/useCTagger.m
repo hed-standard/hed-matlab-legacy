@@ -6,7 +6,7 @@ function [fMap, canceled] = useCTagger(fMap)
     
     % merge result
     if ~canceled
-        fMap.merge(hedMap, 'Merge',{},{});   
+        fMap.merge(hedMap, 'Replace',{},{});   
     end
     
     
