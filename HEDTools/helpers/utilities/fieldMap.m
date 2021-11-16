@@ -278,8 +278,22 @@ classdef fieldMap < hgsetget
                     result = 1;
                 end
             end
-                
         end
+        
+        function result = hasAnnotation(obj)
+            % Check if the fieldMap has annotation
+            result = ~isEmpty(obj); % if empty then don't have annotation
+            if ~result
+                fields = obj.getFields();
+                for f=1:numel(fields)
+                    if obj.getMap(fields{f}).hasAnnotation()
+                        result = 1;
+                        return
+                    end
+                end
+            end % hasAnnotation
+        end
+        
         function merge(obj, fMap, updateType, excludeFields, includeFields)
             % Combine another fieldMap with this object based on update
             % type
