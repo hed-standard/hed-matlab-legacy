@@ -6,6 +6,11 @@ function [fMap, canceled] = useCTagger(fMap)
     
     % merge result
     if ~canceled
+        emptyFields = setdiff(fMap.getFields(), hedMap.getFields());
+        fMap.clearTagsInFields(emptyFields);
+%         for eField=1:length(emptyFields)
+%             hedMap.addValues(emptyFields{eField},{});
+%         end
         fMap.merge(hedMap, 'Replace',{},{});   
     end
     

@@ -336,6 +336,15 @@ classdef fieldMap < hgsetget
             obj.XmlEdited = xmlEdited;
         end % setXmlEdited
         
+        function clearTagsInFields(obj, fields)
+            % clear all the tags in the given fields
+            for f=1:numel(fields)
+                type = fields{f};
+                if obj.GroupMap.isKey(type)
+                    obj.GroupMap(type) = obj.GroupMap(type).clearTags();
+                end
+            end
+        end % clearTagsInFields
     end % public methods
     
     methods (Static = true)

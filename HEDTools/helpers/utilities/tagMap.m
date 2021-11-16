@@ -253,6 +253,15 @@ classdef tagMap < hgsetget
         function clearTagMap(obj)
             obj.TagMap = containers.Map('KeyType', 'char', 'ValueType', 'any');
         end
+        
+        function newTagMap = clearTags(obj)
+            codes = obj.getCodes();
+            newTagMap = tagMap('Field', obj.getField());
+            for c=1:numel(codes)
+                code = codes{c};
+                newTagMap.addValue(tagList(code));
+            end
+        end
     end % public methods
     
     methods(Static = true)
