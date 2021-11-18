@@ -67,7 +67,11 @@ function [fMap, canceled] = useCTagger(fMap)
 %                    code = ['x' code];
 %                end
                if ~isempty(values{v}.getTags())
-                   result.(field).HED(code) = tagList.stringify(values{v}.getTags());
+                   if strcmp(code,'HED')
+                       result.(field).HED = tagList.stringify(values{v}.getTags());
+                   else
+                       result.(field).HED(code) = tagList.stringify(values{v}.getTags());
+                   end
                else
                    result.(field).HED(code) = "";
                end
