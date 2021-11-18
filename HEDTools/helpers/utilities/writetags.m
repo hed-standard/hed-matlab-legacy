@@ -60,14 +60,120 @@ p = parseArguments(eData, fMap, varargin{:});
 tFields = setdiff(fMap.getFields(), p.EventFieldsToIgnore); % exclude fields to ignore
 
 
-if p.WriteIndividualTags && isfield(eData, 'event') && isstruct(eData.event)
+if isfield(eData, 'event') && isstruct(eData.event) %p.WriteIndividualTags && 
     tFields = intersect(fieldnames(eData.event), tFields); % only write tags to fields that exist in both fMap in EEG.event
+%     eData = writeIndividualTagsAPI(eData, fMap);
     eData = writeIndividualTags(eData, fMap, tFields, ...
         p.PreserveTagPrefixes);
 end
 
 eData = writeSummaryTags(fMap, eData, tFields);
+    function json = getCTaggerJsonFromfMap(fMap)
+        fieldnames = fMap.getFields();
+        result = [];
+        for i=1:numel(fieldnames)
+           field = fieldnames{i};
+           result.(field).HED = containers.Map;
+           values = fMap.getValues(field);
+           for v=1:numel(values)
+               code = values{v}.getCode();
+%                if ~isempty(str2num(code))
+%                    code = ['x' code];
+%                end
+               if ~isempty(values{v}.getTags())
+                   if strcmp(code,'HED')
+                       result.(field).HED = tagList.stringify(values{v}.getTags());
+                   else
+                       result.(field).HED(code) = tagList.stringify(values{v}.getTags());
+                   end
+               else
+                   result.(field).HED(code) = "";
+               end
+           end
+        end
+        json = jsonencode(result);
+        json = strrep(json, '"',"'");
+    end
+    function eData = writeIndividualTagsAPI(eData, fMap)
+        json_text = getCTaggerJsonFromfMap(fMap);
+        fid = fopen('events.json','w');
+        fprintf(fid,'%s',json_text);
+        fclose(fid);
+        writetable(struct2table(eData.event), 'temp_events.txt', 'Delimiter', '\t')
+        events_text = fileread('temp_events.txt');
+        host = 'https://hedtools.ucsd.edu/hed';
+        csrf_url = [host '/services']; 
+        services_url = [host '/services_submit'];
+        [cookie, csrftoken] = getSessionInfo(csrf_url);
+        header = ["Content-Type" "application/json"; ...
+                  "Accept" "application/json"; 
+                  "X-CSRFToken" csrftoken; "Cookie" cookie];
 
+        options = weboptions('MediaType', 'application/json', 'Timeout', 120, ...
+                             'HeaderFields', header);
+        
+        request = struct('service', 'events_assemble', ...
+                  'schema_version', '8.0.0', ...
+                  'json_string', json_text, ...
+                  'events_string', events_text, ...
+                  'check_warnings_assemble', 'on', ...
+                  'defs_expand', 'on');
+        response = webwrite(services_url, request, options);
+        response = jsondecode(response);      
+        
+        if isfield(response, 'results') && ~isempty(response.results)
+            results = response.results;
+            fprintf('[%s] status %s: %s\n', response.service, results.msg_category, results.msg);
+            fprintf('HED version: %s\n', results.schema_version);
+            fprintf('\nReturn data for service %s [command: %s]:\n', ...
+                response.service, results.command);
+            data = results.data;
+            if ~iscell(data)
+                fprintf('%s\n', data);
+                fid = fopen("temp.txt","w");
+                fprintf(fid, data);
+                fclose(fid);
+                res = importtsv('temp.txt');
+                system('temp.txt');
+            else
+                for k = 1:length(data)
+                    if ~isempty(data{k})
+                        fprintf('[%d]: %s\n', k, data{k});
+                    end
+                end
+            end
+
+            %% Output the spreadsheet if available
+            if  isfield(results, 'spreadsheet')
+                fprintf('\n----Spreadsheet result----\n');
+                fprintf(results.spreadsheet);
+            end
+        end
+    end
+
+    % Import tsv file
+    % ---------------
+    function res = importtsv(fileName)
+
+    res = loadtxt( fileName, 'verbose', 'off', 'delim', 9);
+
+    for iCol = 1:size(res,2)
+        % search for NaNs in numerical array
+        indNaNs = cellfun(@(x)strcmpi('n/a', x), res(:,iCol));
+        if ~isempty(indNaNs)
+            allNonNaNVals = res(find(~indNaNs),iCol);
+            allNonNaNVals(1) = []; % header
+            testNumeric   = cellfun(@isnumeric, allNonNaNVals);
+            if all(testNumeric)
+                res(find(indNaNs),iCol) = { NaN };
+            elseif ~all(~testNumeric)
+                % Convert numerical value back to string
+                res(:,iCol) = cellfun(@num2str, res(:,iCol), 'uniformoutput', false);
+            end
+        end
+    end
+
+    end
     function eData = writeIndividualTags(eData, fMap, eFields, ...
             preserveTagPrefixes)
         % Write tags to individual events in HED field (this needs to
