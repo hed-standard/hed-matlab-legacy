@@ -39,7 +39,9 @@
 % Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 
 function tags = concattags(event)
-if fieldAvailable(event, 'usertags') && ...
+if fieldAvailable(event, 'HED')
+    tags = [event.HED];
+elseif fieldAvailable(event, 'usertags') && ...
         fieldAvailable(event, 'hedtags')
     tags = [event.usertags ',' event.hedtags];
 elseif fieldAvailable(event, 'usertags') && ...
